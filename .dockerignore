@@ -1,0 +1,28 @@
+# Ignore files and directories common to development environments
+.git
+.venv
+.vscode
+.idea
+*.pyc
+__pycache__/
+
+# Ignore build and distribution artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore test-related files
+tests/
+*.xml
+
+# Ignore documentation
+docs/
+
+# Ignore configuration files that might contain sensitive information
+.env
+local_settings.py
+
+# Ignore temporary files and logs
+*.log
+*.tmp
+tmp/

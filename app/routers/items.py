@@ -111,3 +111,16 @@ def get_folder_item_quantity(folder_id: int, db: Session = Depends(get_db)):
     """
     quantity = db.query(func.sum(models.Item.quantity)).filter(models.Item.folder_id == folder_id).scalar()
     return quantity if quantity is not None else 0
+
+@router.patch("/items/{item_id}", response_model=None)
+def update_item(item_id: int, item: dict, db: Session = Depends(get_db)):
+    db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    for key, value in item.items():
+        setattr(db_item, key, value)
+
+    db.commit()
+    db.refresh(db_item)
+    return db_item.__dict__

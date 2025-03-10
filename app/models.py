@@ -29,6 +29,7 @@ class Folder(Base):
     description = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     tags = Column(String, nullable=True)
+    image_url = Column(String)
 
     children = relationship("Folder", remote_side=[id], foreign_keys=[parent_id])
     items = relationship("Item", back_populates="folder")
@@ -44,7 +45,8 @@ class Item(Base):
     unit = Column(String, nullable=True)
     tag = Column(String, nullable=True)
     acquired_date = Column(Date, nullable=True)
-    notes = Column(Text, nullable=True) # Added Notes Field
+    notes = Column(Text, nullable=True)
+    image_url = Column(String)
 
     folder = relationship("Folder", back_populates="items")
     images = relationship("Image", back_populates="item")

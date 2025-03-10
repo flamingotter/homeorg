@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -37,7 +36,10 @@
             </div>
         </div>
 
-        <div id="items-grid"></div>
+        <div id="items-grid">
+            <div id="folder-grid"></div>
+            <div id="item-grid"></div>
+        </div>
 
         <button id="add-item-fab">
             <i class="material-icons">add</i>
@@ -95,72 +97,92 @@
         }
 
         function displayItems(items) {
-            const itemsGrid = document.getElementById('items-grid');
+            const itemGrid = document.getElementById('item-grid');
+            itemGrid.innerHTML = ''; // Clear the item grid
 
             items.forEach(item => {
-                const itemCard = document.createElement('div');
-                itemCard.className = 'item-card';
-                itemCard.innerHTML = `
-                    <img src="https://via.placeholder.com/80" alt="${item.name}">
-                    <div class="item-details">
-                        <h3 class="item-title">${item.name}</h3>
-                        <div class="item-info">
-                            <span class="item-quantity">${item.quantity} ${item.unit}</span>
+                if (item.folder_id === currentFolderId || (currentFolderId === null && item.folder_id === null)) {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'item-card';
+
+                    const imageUrl = item.image_url || 'https://via.placeholder.com/80';
+
+                    itemCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
+                        <div class="item-details">
+                            <h3 class="item-title">${item.name}</h3>
+                            <div class="item-info">
+                                <span class="item-quantity">${item.quantity} ${item.unit}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="item-actions">
-                        <i class="material-icons">more_vert</i>
-                    </div>
-                `;
-                itemsGrid.appendChild(itemCard);
+                        <div class="item-actions">
+                            <i class="material-icons">more_vert</i>
+                        </div>
+                    `;
+                    itemGrid.appendChild(itemCard);
+                    console.log('item card HTML:', itemCard.outerHTML);
+                }
             });
         }
 
         function displayFolders(folders) {
-            const itemsGrid = document.getElementById('items-grid');
+            const folderGrid = document.getElementById('folder-grid');
+            folderGrid.innerHTML = ''; // Clear the folder grid
 
             folders.forEach(folder => {
-                const folderCard = document.createElement('div');
-                folderCard.className = 'item-card';
-                folderCard.innerHTML = `
-                    <div class="folder-icon">
-                        <i class="material-icons">folder</i>
-                    </div>
-                    <div class="item-details">
-                        <h3 class="item-title">${folder.name}</h3>
-                    </div>
-                    <div class="item-actions">
-                        <i class="material-icons">more_vert</i>
-                    </div>
-                `;
-                folderCard.addEventListener('click', () => {
-                    currentFolderId = folder.id;
-                    loadFolderView();
-                });
-                itemsGrid.appendChild(folderCard);
+                if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
+                    const folderCard = document.createElement('div');
+                    folderCard.className = 'item-card';
+
+                    const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
+
+                    folderCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                        <div class="item-details">
+                            <h3 class="item-title">${folder.name}</h3>
+                        </div>
+                        <div class="item-actions">
+                            <i class="material-icons">more_vert</i>
+                        </div>
+                    `;
+                    folderCard.addEventListener('click', () => {
+                        currentFolderId = folder.id;
+                        loadFolderView();
+                    });
+                    folderGrid.appendChild(folderCard);
+                    console.log('items-grid children:', document.getElementById('items-grid').children);
+                    console.log("items-grid innerHTML:", document.getElementById('items-grid').innerHTML);
+                }
             });
         }
 
         function loadRootView() {
+            console.log("loadRootView called");
             currentFolderId = null;
             document.getElementById('back-button').style.display = 'none';
 
-            // Fetch and display folders
+            // Fetch and display folders first
+            console.log("before fetch folders");
             fetch('/folders/')
                 .then(response => response.json())
                 .then(folders => {
-                    // Fetch and display items
+                    console.log("folders:", folders);
+                    displayFolders(folders); // Display folders
+
+                    // Then fetch and display items
+                    console.log("before fetch items");
                     fetch('/items/')
                         .then(response => response.json())
                         .then(items => {
-                            // Combine and display folders and items
-                            displayFolders(folders);
-                            displayItems(items);
+                            console.log("items:", items);
+                            displayItems(items); // Display items after folders
                             updateCounts();
                         })
                         .catch(error => console.error('Error fetching items:', error));
                 })
                 .catch(error => console.error('Error fetching folders:', error));
+
+            console.log("after loadRootView function");
         }
 
         function loadFolderView() {
@@ -174,6 +196,10 @@
                     fetch(`/folders/${currentFolderId}/items`)
                         .then(response => response.json())
                         .then(items => {
+                            // Clear the items-grid
+                            document.getElementById('folder-grid').innerHTML = '';
+                            document.getElementById('item-grid').innerHTML = '';
+
                             // Combine and display sub-folders and items
                             displayFolders(subFolders);
                             displayItems(items);

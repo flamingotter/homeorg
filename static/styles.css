@@ -20,6 +20,12 @@ header {
     margin-bottom: 20px;
 }
 
+.thumbnail {
+    width: 80px; /* Adjust the width as needed */
+    height: 80px; /* Adjust the height as needed */
+    object-fit: cover; /* Maintain aspect ratio and cover the area */
+}
+
 .counts {
     display: flex;
     gap: 20px;
@@ -122,4 +128,16 @@ header {
 
 #add-item-fab .material-icons {
     font-size: 1.5em;
+}
+
+#items-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Stack folders and items vertically */
+    gap: 30px;
+}
+
+#folder-grid, #item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
 }

@@ -92,3 +92,16 @@ def read_folder_items(folder_id: int, db: Session = Depends(get_db)):
     """
     items = db.query(models.Item).filter(models.Item.folder_id == folder_id).all()
     return [item.__dict__ for item in items]
+
+@router.patch("/folders/{folder_id}", response_model=None)
+def update_folder(folder_id: int, folder: dict, db: Session = Depends(get_db)):
+    db_folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if db_folder is None:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    for key, value in folder.items():
+        setattr(db_folder, key, value)
+
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder.__dict__

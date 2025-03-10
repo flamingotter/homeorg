@@ -13,4 +13,8 @@ RUN ls -la /app
 
 RUN python -c "import sys; print(sys.path)"
 
+ENV DATABASE_URL="sqlite:////data/data.db"
+
+EXPOSE 80
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]

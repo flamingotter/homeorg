@@ -1,0 +1,206 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Tracker</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div id="back-button" style="display: none;">
+                <i class="material-icons">arrow_back</i>
+            </div>
+            <h1>Inventory Tracker</h1>
+            <div class="header-icons">
+                <i class="material-icons">search</i>
+                <i class="material-icons">filter_list</i>
+                <i class="material-icons">more_vert</i>
+            </div>
+        </header>
+
+        <div class="counts">
+            <span>Folders: <span id="folder-count">0</span></span>
+            <span>Items: <span id="item-count">0</span></span>
+            <span>Quantity: <span id="total-quantity">0</span></span>
+        </div>
+
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" placeholder="Search..." id="search-input">
+                <i class="material-icons">search</i>
+            </div>
+            <div class="filter-box">
+                <input type="text" placeholder="Filter..." id="filter-input">
+                <i class="material-icons">filter_list</i>
+            </div>
+        </div>
+
+        <div id="items-grid"></div>
+
+        <button id="add-item-fab">
+            <i class="material-icons">add</i>
+        </button>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#">
+            <i class="material-icons">home</i> Items
+        </a>
+        <a href="#">
+            <i class="material-icons">search</i> Search
+        </a>
+        <a href="#">
+            <i class="material-icons">menu</i> Menu
+        </a>
+    </nav>
+
+    <script>
+        let currentFolderId = null; // Track the current folder ID
+
+        function updateCounts() {
+            let url = '/folders/count';
+            if (currentFolderId) {
+                url = `/folders/${currentFolderId}/count`;
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('folder-count').textContent = data;
+                })
+                .catch(error => console.error('Error fetching folder count:', error));
+
+            let itemsUrl = '/items/count';
+            let quantityUrl = '/items/quantity';
+            if (currentFolderId) {
+                itemsUrl = `/folders/${currentFolderId}/items/count`;
+                quantityUrl = `/folders/${currentFolderId}/items/quantity`;
+            }
+
+            fetch(itemsUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('item-count').textContent = data;
+                })
+                .catch(error => console.error('Error fetching item count:', error));
+
+            fetch(quantityUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-quantity').textContent = data;
+                })
+                .catch(error => console.error('Error fetching total quantity:', error));
+        }
+
+        function displayItems(items) {
+            const itemsGrid = document.getElementById('items-grid');
+
+            items.forEach(item => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card';
+                itemCard.innerHTML = `
+                    <img src="https://via.placeholder.com/80" alt="${item.name}">
+                    <div class="item-details">
+                        <h3 class="item-title">${item.name}</h3>
+                        <div class="item-info">
+                            <span class="item-quantity">${item.quantity} ${item.unit}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <i class="material-icons">more_vert</i>
+                    </div>
+                `;
+                itemsGrid.appendChild(itemCard);
+            });
+        }
+
+        function displayFolders(folders) {
+            const itemsGrid = document.getElementById('items-grid');
+
+            folders.forEach(folder => {
+                const folderCard = document.createElement('div');
+                folderCard.className = 'item-card';
+                folderCard.innerHTML = `
+                    <div class="folder-icon">
+                        <i class="material-icons">folder</i>
+                    </div>
+                    <div class="item-details">
+                        <h3 class="item-title">${folder.name}</h3>
+                    </div>
+                    <div class="item-actions">
+                        <i class="material-icons">more_vert</i>
+                    </div>
+                `;
+                folderCard.addEventListener('click', () => {
+                    currentFolderId = folder.id;
+                    loadFolderView();
+                });
+                itemsGrid.appendChild(folderCard);
+            });
+        }
+
+        function loadRootView() {
+            currentFolderId = null;
+            document.getElementById('back-button').style.display = 'none';
+
+            // Fetch and display folders
+            fetch('/folders/')
+                .then(response => response.json())
+                .then(folders => {
+                    // Fetch and display items
+                    fetch('/items/')
+                        .then(response => response.json())
+                        .then(items => {
+                            // Combine and display folders and items
+                            displayFolders(folders);
+                            displayItems(items);
+                            updateCounts();
+                        })
+                        .catch(error => console.error('Error fetching items:', error));
+                })
+                .catch(error => console.error('Error fetching folders:', error));
+        }
+
+        function loadFolderView() {
+            document.getElementById('back-button').style.display = 'block';
+
+            // Fetch and display sub-folders
+            fetch(`/folders/${currentFolderId}/folders`)
+                .then(response => response.json())
+                .then(subFolders => {
+                    // Fetch and display items
+                    fetch(`/folders/${currentFolderId}/items`)
+                        .then(response => response.json())
+                        .then(items => {
+                            // Combine and display sub-folders and items
+                            displayFolders(subFolders);
+                            displayItems(items);
+                            updateCounts();
+                        })
+                        .catch(error => console.error(`Error fetching items for folder ${currentFolderId}:`, error));
+                })
+                .catch(error => console.error(`Error fetching sub-folders for folder ${currentFolderId}:`, error));
+        }
+
+        document.getElementById('back-button').addEventListener('click', () => {
+            if (currentFolderId) {
+                fetch(`/folders/${currentFolderId}/parent`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data) {
+                            currentFolderId = data.id;
+                            loadFolderView();
+                        } else {
+                            loadRootView();
+                        }
+                    })
+                    .catch(error => console.error(`Error fetching parent folder for ${currentFolderId}:`, error));
+            }
+        });
+
+        loadRootView(); // Load root view on page load
+    </script>
+</body>
+</html>

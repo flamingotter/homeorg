@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Inventory Tracker</title>
+    <title>HomeOrg</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -132,14 +132,16 @@
             folders.forEach(folder => {
                 if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
                     const folderCard = document.createElement('div');
-                    folderCard.className = 'item-card';
+                    folderCard.className = 'folder-card';
 
                     const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
 
                     folderCard.innerHTML = `
                         <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
                         <div class="item-details">
-                            <h3 class="item-title">${folder.name}</h3>
+                            <h3 class="item-title">
+                                <i class="material-icons folder-icon">folder</i> ${folder.name}
+                            </h3>
                         </div>
                         <div class="item-actions">
                             <i class="material-icons">more_vert</i>

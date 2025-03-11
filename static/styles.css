@@ -49,14 +49,87 @@ header {
     border-radius: 5px;
 }
 
+/* Folder card styling */
+.folder-card {
+    background-color: #282828; /* Slightly different background for folders */    
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex; 
+    align-items: center; 
+    padding: 10px; 
+    transition: transform 0.2s ease;
+}
+
+.folder-details {
+    display: flex; 
+    align-items: center; 
+    flex-grow: 1; 
+}
+
+.item-details .item-title {
+    margin-left: 10px; /* Add space between image and title */
+}
+
+.folder-icon {
+    margin-right: 8px; /* Add some space between the icon and the name */
+    margin-left: 8px; 
+    vertical-align: middle; /* Align the icon vertically */
+    color: #FFC107; /* Optional: Give the folder icon a distinct color */
+}
+
+.folder-card:hover {
+    transform: translateY(-2px);
+}
+
+.folder-card img {
+    margin-right: 10px;
+}
+
+.folder-title {
+    font-size: 1.2em;
+}
+
+.folder-description {
+    color: #bbb;
+    margin-bottom: 10px;
+}
+
+.folder-info {
+    margin-bottom: 10px;
+}
+
+.folder-info span {
+    margin-right: 15px;
+}
+
+.folder-actions .material-icons {
+    font-size: 1.2em;
+    margin-left: auto;
+}
+
+
 /* Item card styling */
 .item-card {
     background-color: #202020;
     border: none;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    padding: 15px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
     transition: transform 0.2s ease;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    align-items: flex-start;
+}
+
+.item-details .item-title {
+    margin-left: 10px;
 }
 
 .item-card:hover {
@@ -64,7 +137,7 @@ header {
 }
 
 .item-card img {
-    border-radius: 10px;
+    margin-right: 10px;
 }
 
 .item-title {
@@ -77,15 +150,18 @@ header {
 }
 
 .item-info {
-    margin-bottom: 10px;
+    margin-top: 5px;
 }
 
-.item-info span {
+.item-quantity {
+    display: block;
     margin-right: 15px;
+    margin-left: 10px;
 }
 
 .item-actions .material-icons {
     font-size: 1.2em;
+    margin-left: auto;
 }
 
 /* Bottom navigation styling */
@@ -131,13 +207,13 @@ header {
 }
 
 #items-grid {
-    display: grid;
-    grid-template-columns: 1fr; /* Stack folders and items vertically */
-    gap: 30px;
+    display: flex; /* Use flexbox */
+    flex-direction: column; /* Stack items vertically */
+    gap: 10px; /* Adjust gap as needed */
 }
 
 #folder-grid, #item-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
+    display: flex; /* Use flexbox to stack items in each section */
+    flex-direction: column; /* Stack items vertically */
+    gap: 10px; /* Adjust gap as needed */
 }

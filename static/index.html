@@ -11,10 +11,14 @@
             <div id="back-button" style="display: none;">
                 <i class="material-icons">arrow_back</i>
             </div>
-            <h1>Inventory Tracker</h1>
+            <h1>HomeOrg</h1>
             <div class="header-icons">
-                <i class="material-icons">search</i>
-                <i class="material-icons">filter_list</i>
+                <div class="search-icon">
+                    <i class="material-icons">search</i>
+                </div>
+                <div class="filter-icon">
+                    <i class="material-icons">filter_list</i>
+                </div>
                 <i class="material-icons">more_vert</i>
             </div>
         </header>
@@ -23,17 +27,6 @@
             <span>Folders: <span id="folder-count">0</span></span>
             <span>Items: <span id="item-count">0</span></span>
             <span>Quantity: <span id="total-quantity">0</span></span>
-        </div>
-
-        <div class="search-filter">
-            <div class="search-box">
-                <input type="text" placeholder="Search..." id="search-input">
-                <i class="material-icons">search</i>
-            </div>
-            <div class="filter-box">
-                <input type="text" placeholder="Filter..." id="filter-input">
-                <i class="material-icons">filter_list</i>
-            </div>
         </div>
 
         <div id="items-grid">
@@ -131,8 +124,8 @@
 
             // Sort folders alphabetically by name
             const sortedFolders = folders.slice().sort((a, b) => {
-                const nameA = a.name.toUpperCase(); // Ignore case
-                const nameB = b.name.toUpperCase(); // Ignore case
+                const nameA = a.name.toUpperCase();
+                const nameB = b.name.toUpperCase();
                 if (nameA < nameB) {
                     return -1;
                 }
@@ -142,107 +135,99 @@
                 return 0;
             });
 
+            // Array to store promises for all fetch operations
+            const fetchPromises = [];
+
+            // First, fetch data for all folders
             sortedFolders.forEach(folder => {
                 if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
-                    const folderCard = document.createElement('div');
-                    folderCard.className = 'folder-card';
+                    // Create promises for fetching subfolder count and item count
+                    const subfolderCountPromise = fetch(`/folders/${folder.id}/count`).then(response => response.json());
+                    const itemCountPromise = fetch(`/folders/${folder.id}/items/count`).then(response => response.json());
 
-                    // Fetch subfolder count
-                    fetch(`/folders/${folder.id}/count`)
-                        .then(response => response.json())
-                        .then(subfolderCount => {
-                            // Fetch item count
-                            fetch(`/folders/${folder.id}/items/count`)
-                                .then(response => response.json())
-                                .then(itemCount => {
-                                    const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
+                    // Add a promise that resolves with the folder data after both fetches complete
+                    const allDataPromise = Promise.all([subfolderCountPromise, itemCountPromise])
+                        .then(([subfolderCount, itemCount]) => ({
+                            folder,
+                            subfolderCount,
+                            itemCount
+                        }));
 
-                                    let folderInfoHTML = '';
-                                    if (subfolderCount > 0) {
-                                        folderInfoHTML += `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | `;
-                                    }
-                                    // Display "Items 0" if there are no items
-                                    folderInfoHTML += `Items ${itemCount > 0 ? itemCount : 0}`;
-
-                                    folderCard.innerHTML = `
-                                        <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
-                                        <div class="folder-details">
-                                            <h3 class="folder-title">${folder.name}</h3>
-                                            <div class="folder-info">
-                                                ${folderInfoHTML}
-                                            </div>
-                                        </div>
-                                        <div class="folder-actions">
-                                            <i class="material-icons">more_vert</i>
-                                        </div>
-                                    `;
-
-                                    folderCard.addEventListener('click', () => {
-                                        currentFolderId = folder.id;
-                                        loadFolderView();
-                                    });
-
-                                    folderGrid.appendChild(folderCard);
-                                })
-                                .catch(error => console.error(`Error fetching item count for folder ${folder.id}:`, error));
-                        })
-                        .catch(error => console.error(`Error fetching subfolder count for folder ${folder.id}:`, error));
+                    fetchPromises.push(allDataPromise);
                 }
             });
+
+            // After all data is fetched, create and append the folder cards
+            Promise.all(fetchPromises)
+                .then(folderDataArray => { 
+                    folderDataArray.forEach(({ folder, subfolderCount, itemCount }) => {
+                        const folderCard = document.createElement('div');
+                        folderCard.className = 'folder-card';
+
+                        const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
+
+                        let folderInfoHTML = '';
+                        if (subfolderCount > 0) {
+                            folderInfoHTML += `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | `;
+                        }
+                        // Display "Items 0" if there are no items
+                        folderInfoHTML += `Items ${itemCount > 0 ? itemCount : 0}`;
+
+                        folderCard.innerHTML = `
+                            <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                            <div class="folder-details">
+                                <h3 class="folder-title">${folder.name}</h3>
+                                <div class="folder-info">
+                                    ${folderInfoHTML}
+                                </div>
+                            </div>
+                            <div class="folder-actions">
+                                <i class="material-icons">more_vert</i>
+                            </div>
+                        `;
+
+                        folderCard.addEventListener('click', () => {
+                            currentFolderId = folder.id;
+                            loadFolderView();
+                        });
+
+                        folderGrid.appendChild(folderCard); // Append after all data is ready
+                    });
+                })
+                .catch(error => console.error('Error fetching folder data:', error));
         }
 
         function loadRootView() {
-            console.log("loadRootView called");
             currentFolderId = null;
             document.getElementById('back-button').style.display = 'none';
 
-            // Fetch and display folders first
-            console.log("before fetch folders");
-            fetch('/folders/')
-                .then(response => response.json())
-                .then(folders => {
-                    console.log("folders:", folders);
-                    displayFolders(folders); // Display folders
-
-                    // Then fetch and display items
-                    console.log("before fetch items");
-                    fetch('/items/')
-                        .then(response => response.json())
-                        .then(items => {
-                            console.log("items:", items);
-                            displayItems(items); // Display items after folders
-                            updateCounts();
-                        })
-                        .catch(error => console.error('Error fetching items:', error));
-                })
-                .catch(error => console.error('Error fetching folders:', error));
-
-            console.log("after loadRootView function");
+            Promise.all([
+                fetch('/folders/').then(response => response.json()),
+                fetch('/items/').then(response => response.json())
+            ])
+            .then(([folders, items]) => {
+                displayFolders(folders);
+                displayItems(items);
+                updateCounts();
+            })
+            .catch(error => console.error('Error loading root view:', error));
         }
 
         function loadFolderView() {
             document.getElementById('back-button').style.display = 'block';
 
-            // Fetch and display sub-folders
-            fetch(`/folders/${currentFolderId}/folders`)
-                .then(response => response.json())
-                .then(subFolders => {
-                    // Fetch and display items
-                    fetch(`/folders/${currentFolderId}/items`)
-                        .then(response => response.json())
-                        .then(items => {
-                            // Clear the items-grid
-                            document.getElementById('folder-grid').innerHTML = '';
-                            document.getElementById('item-grid').innerHTML = '';
-
-                            // Combine and display sub-folders and items
-                            displayFolders(subFolders);
-                            displayItems(items);
-                            updateCounts();
-                        })
-                        .catch(error => console.error(`Error fetching items for folder ${currentFolderId}:`, error));
-                })
-                .catch(error => console.error(`Error fetching sub-folders for folder ${currentFolderId}:`, error));
+            Promise.all([
+                fetch(`/folders/${currentFolderId}/folders`).then(response => response.json()),
+                fetch(`/folders/${currentFolderId}/items`).then(response => response.json())
+            ])
+            .then(([subFolders, items]) => {
+                document.getElementById('folder-grid').innerHTML = '';
+                document.getElementById('item-grid').innerHTML = '';
+                displayFolders(subFolders);
+                displayItems(items);
+                updateCounts();
+            })
+            .catch(error => console.error(`Error loading folder view for ${currentFolderId}:`, error));
         }
 
         document.getElementById('back-button').addEventListener('click', () => {

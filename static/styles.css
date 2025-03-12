@@ -55,27 +55,30 @@ header {
     border: none;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: flex; 
-    align-items: center; 
+    display: flex;
     padding: 10px; 
     transition: transform 0.2s ease;
+    flex-direction: row; /* Place thumbnail and details side by side */
+    align-items: flex-start; /* Align items to the top */
 }
 
 .folder-details {
-    display: flex; 
-    align-items: center; 
-    flex-grow: 1; 
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    margin-left: 10px; /* Add space between thumbnail and details */
 }
 
-.item-details .item-title {
-    margin-left: 10px; /* Add space between image and title */
+.folder-details .folder-title {
+    /* margin-left: 10px; Add space between image and title */
+    align-self: flex-start;
+    width: fit-content;
 }
 
 .folder-icon {
-    margin-right: 8px; /* Add some space between the icon and the name */
-    margin-left: 8px; 
-    vertical-align: middle; /* Align the icon vertically */
-    color: #FFC107; /* Optional: Give the folder icon a distinct color */
+    margin-right: 5px;
+    vertical-align: middle;
+    color: #FFC107;
 }
 
 .folder-card:hover {
@@ -88,6 +91,7 @@ header {
 
 .folder-title {
     font-size: 1.2em;
+    margin-bottom: 5px; /* Add space between title and info */
 }
 
 .folder-description {
@@ -96,7 +100,9 @@ header {
 }
 
 .folder-info {
-    margin-bottom: 10px;
+    display: inline-block;
+    flex-direction: column; /* Stack icon and counts vertically */
+    align-items: flex-start; /* Align items to the left */
 }
 
 .folder-info span {

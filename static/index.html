@@ -129,31 +129,64 @@
             const folderGrid = document.getElementById('folder-grid');
             folderGrid.innerHTML = ''; // Clear the folder grid
 
-            folders.forEach(folder => {
+            // Sort folders alphabetically by name
+            const sortedFolders = folders.slice().sort((a, b) => {
+                const nameA = a.name.toUpperCase(); // Ignore case
+                const nameB = b.name.toUpperCase(); // Ignore case
+                if (nameA < nameB) {
+                    return -1;
+                }
+                if (nameA > nameB) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            sortedFolders.forEach(folder => {
                 if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
                     const folderCard = document.createElement('div');
                     folderCard.className = 'folder-card';
 
-                    const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
+                    // Fetch subfolder count
+                    fetch(`/folders/${folder.id}/count`)
+                        .then(response => response.json())
+                        .then(subfolderCount => {
+                            // Fetch item count
+                            fetch(`/folders/${folder.id}/items/count`)
+                                .then(response => response.json())
+                                .then(itemCount => {
+                                    const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
 
-                    folderCard.innerHTML = `
-                        <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
-                        <div class="item-details">
-                            <h3 class="item-title">
-                                <i class="material-icons folder-icon">folder</i> ${folder.name}
-                            </h3>
-                        </div>
-                        <div class="item-actions">
-                            <i class="material-icons">more_vert</i>
-                        </div>
-                    `;
-                    folderCard.addEventListener('click', () => {
-                        currentFolderId = folder.id;
-                        loadFolderView();
-                    });
-                    folderGrid.appendChild(folderCard);
-                    console.log('items-grid children:', document.getElementById('items-grid').children);
-                    console.log("items-grid innerHTML:", document.getElementById('items-grid').innerHTML);
+                                    let folderInfoHTML = '';
+                                    if (subfolderCount > 0) {
+                                        folderInfoHTML += `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | `;
+                                    }
+                                    // Display "Items 0" if there are no items
+                                    folderInfoHTML += `Items ${itemCount > 0 ? itemCount : 0}`;
+
+                                    folderCard.innerHTML = `
+                                        <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                                        <div class="folder-details">
+                                            <h3 class="folder-title">${folder.name}</h3>
+                                            <div class="folder-info">
+                                                ${folderInfoHTML}
+                                            </div>
+                                        </div>
+                                        <div class="folder-actions">
+                                            <i class="material-icons">more_vert</i>
+                                        </div>
+                                    `;
+
+                                    folderCard.addEventListener('click', () => {
+                                        currentFolderId = folder.id;
+                                        loadFolderView();
+                                    });
+
+                                    folderGrid.appendChild(folderCard);
+                                })
+                                .catch(error => console.error(`Error fetching item count for folder ${folder.id}:`, error));
+                        })
+                        .catch(error => console.error(`Error fetching subfolder count for folder ${folder.id}:`, error));
                 }
             });
         }

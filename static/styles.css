@@ -17,10 +17,11 @@ body {
 
 /* Header styling */
 header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto 1fr auto; /* Define columns */
     align-items: center;
     margin-bottom: 20px;
+    margin-left: 20px;
 }
 
 .thumbnail {
@@ -56,25 +57,19 @@ header {
 }
 
 .header-icons {
-    /* Existing header-icons styles */
     display: flex;
-    /* Example: Use flexbox for layout */
     align-items: center;
     margin-right: 10px;
+    grid-column: 3; /* Place in the third column */
+    cursor: pointer;
 }
 
 .header-icons .search-icon {
-    /* Style the search icon */
     margin-right: 10px;
-    /* Add spacing to the right */
-    cursor: pointer;
-    /* Change cursor on hover */
 }
 
 .header-icons .filter-icon {
-    /* Style the filter icon */
     margin-right: 10px;
-    cursor: pointer;
 }
 
 /* Folder card styling */
@@ -83,7 +78,7 @@ header {
     /* Slightly different background for folders */
     display: flex;
     padding: 10px;
-    align-items: center; /* Changed to center */
+    align-items: center; 
     width: 100%;
     box-sizing: border-box;
 }
@@ -150,7 +145,8 @@ header {
 
 .folder-actions .material-icons {
     font-size: 1.2em;
-    margin-left: auto;
+    margin-left: auto;    
+    /* cursor: pointer; */
 }
 
 /* Item card styling */
@@ -204,7 +200,8 @@ header {
 
 .item-actions .material-icons {
     font-size: 1.2em;
-    margin-left: auto;
+    margin-left: auto;    
+    /* cursor: pointer; */
 }
 
 /* Bottom navigation styling */
@@ -276,4 +273,23 @@ header {
     flex-direction: column;
     /* Stack items vertically */
     gap: 1px;
+}
+
+#header-title {
+    font-size: 2em;
+    font-weight: bold;
+    unicode-bidi: isolate;
+    grid-column: 2; /* Place in the second column */
+    text-align: left;
+    min-width: 0; /* Prevent collapsing */
+    margin-block-start: 0.67em;
+    margin-block-end: 0.67em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+}
+
+#back-button {
+    grid-column: 1;
+    margin-right: 20px;
+    cursor: pointer;
 }

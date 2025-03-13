@@ -77,6 +77,16 @@ def read_root_folders(db: Session = Depends(get_db)):
     folders = db.query(models.Folder).filter(models.Folder.parent_id == None).all()
     return [folder.__dict__ for folder in folders]
 
+@router.get("/folders/{folder_id}", response_model=None)
+def read_folder(folder_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve a single folder by its ID.
+    """
+    folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if folder is None:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return folder.__dict__
+
 @router.get("/folders/{folder_id}/folders")
 def read_sub_folders(folder_id: int, db: Session = Depends(get_db)):
     """

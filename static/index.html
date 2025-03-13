@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>HomeOrg</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -105,7 +107,7 @@
                         <div class="item-details">
                             <h3 class="item-title">${item.name}</h3>
                             <div class="item-info">
-                                <span class="item-quantity">${item.quantity} ${item.unit}</span>
+                                ${item.quantity} ${item.unit}
                             </div>
                         </div>
                         <div class="item-actions">
@@ -159,7 +161,7 @@
 
             // After all data is fetched, create and append the folder cards
             Promise.all(fetchPromises)
-                .then(folderDataArray => { 
+                .then(folderDataArray => {
                     folderDataArray.forEach(({ folder, subfolderCount, itemCount }) => {
                         const folderCard = document.createElement('div');
                         folderCard.className = 'folder-card';
@@ -205,12 +207,12 @@
                 fetch('/folders/').then(response => response.json()),
                 fetch('/items/').then(response => response.json())
             ])
-            .then(([folders, items]) => {
-                displayFolders(folders);
-                displayItems(items);
-                updateCounts();
-            })
-            .catch(error => console.error('Error loading root view:', error));
+                .then(([folders, items]) => {
+                    displayFolders(folders);
+                    displayItems(items);
+                    updateCounts();
+                })
+                .catch(error => console.error('Error loading root view:', error));
         }
 
         function loadFolderView() {
@@ -220,14 +222,14 @@
                 fetch(`/folders/${currentFolderId}/folders`).then(response => response.json()),
                 fetch(`/folders/${currentFolderId}/items`).then(response => response.json())
             ])
-            .then(([subFolders, items]) => {
-                document.getElementById('folder-grid').innerHTML = '';
-                document.getElementById('item-grid').innerHTML = '';
-                displayFolders(subFolders);
-                displayItems(items);
-                updateCounts();
-            })
-            .catch(error => console.error(`Error loading folder view for ${currentFolderId}:`, error));
+                .then(([subFolders, items]) => {
+                    document.getElementById('folder-grid').innerHTML = '';
+                    document.getElementById('item-grid').innerHTML = '';
+                    displayFolders(subFolders);
+                    displayItems(items);
+                    updateCounts();
+                })
+                .catch(error => console.error(`Error loading folder view for ${currentFolderId}:`, error));
         }
 
         document.getElementById('back-button').addEventListener('click', () => {
@@ -249,4 +251,5 @@
         loadRootView(); // Load root view on page load
     </script>
 </body>
+
 </html>

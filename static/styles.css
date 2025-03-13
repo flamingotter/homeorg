@@ -6,12 +6,13 @@ body {
     font-family: 'Roboto', sans-serif;
     margin: 0;
     padding: 0;
+    box-sizing: border-box; /* Added universal box-sizing */
 }
 
 .container {
     width: 100%;
     margin: 0 auto;
-    padding: 1px;
+    padding: 0px; /* Removed padding */
 }
 
 /* Header styling */
@@ -30,8 +31,8 @@ header {
 
 .counts {
     display: flex;
-    gap: 20px;    
-    margin-left: 10px;
+    gap: 20px;
+    margin-left: 10px; /* Adjusted margin */
 }
 
 .counts span {
@@ -43,26 +44,31 @@ header {
     gap: 10px;
 }
 
-.search-box, .filter-box {
+.search-box,
+.filter-box {
     border: 1px solid #555;
 }
 
-.search-box input, .filter-box input {
+.search-box input,
+.filter-box input {
     padding: 8px;
     border-radius: 5px;
 }
 
 .header-icons {
     /* Existing header-icons styles */
-    display: flex; /* Example: Use flexbox for layout */
+    display: flex;
+    /* Example: Use flexbox for layout */
     align-items: center;
     margin-right: 10px;
 }
 
 .header-icons .search-icon {
     /* Style the search icon */
-    margin-right: 10px; /* Add spacing to the right */
-    cursor: pointer; /* Change cursor on hover */
+    margin-right: 10px;
+    /* Add spacing to the right */
+    cursor: pointer;
+    /* Change cursor on hover */
 }
 
 .header-icons .filter-icon {
@@ -73,10 +79,11 @@ header {
 
 /* Folder card styling */
 .folder-card {
-    background-color: #282828; /* Slightly different background for folders */  
+    background-color: #282828;
+    /* Slightly different background for folders */
     display: flex;
-    padding: 10px; 
-    align-items: flex-start; /* Align items to the top */
+    padding: 10px;
+    align-items: center; /* Changed to center */
     width: 100%;
     box-sizing: border-box;
 }
@@ -84,12 +91,13 @@ header {
 .folder-details {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    margin-left: 10px; /* Add space between thumbnail and details */
+    flex-grow: 1;    
+    align-items: flex-start;
+    /* margin-left: 10px; */
+    /* Add space between thumbnail and details */
 }
 
 .folder-details .folder-title {
-    /* margin-left: 10px; Add space between image and title */
     align-self: flex-start;
     width: fit-content;
 }
@@ -101,12 +109,18 @@ header {
 }
 
 .folder-card .folder-info .folder-icon {
-    font-size: 16px; /* Adjust the size as needed */
-    color: white; /* Set the icon color to white */
-    -webkit-text-stroke: 1px white; /* Add a white outline (for WebKit browsers) */
+    font-size: 16px;
+    /* Adjust the size as needed */
+    color: white;
+    /* Set the icon color to white */
+    -webkit-text-stroke: 1px white;
+    /* Add a white outline (for WebKit browsers) */
     /* text-stroke: 1px white; */
-    -webkit-text-fill-color: transparent; /* Remove the fill color (for WebKit browsers) */
+    /* Add a white outline (standard CSS) */
+    -webkit-text-fill-color: transparent;
+    /* Remove the fill color (for WebKit browsers) */
     /* text-fill-color: transparent; */
+    /* Remove the fill color (standard CSS) */
 }
 
 .folder-card img {
@@ -115,7 +129,8 @@ header {
 
 .folder-title {
     font-size: 1.2em;
-    margin-bottom: 5px; /* Add space between title and info */
+    margin-bottom: 5px;
+    /* Add space between title and info */
 }
 
 .folder-description {
@@ -125,8 +140,8 @@ header {
 
 .folder-info {
     display: inline-block;
-    flex-direction: column; /* Stack icon and counts vertically */
-    align-items: flex-start; /* Align items to the left */
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .folder-info span {
@@ -137,7 +152,6 @@ header {
     font-size: 1.2em;
     margin-left: auto;
 }
-
 
 /* Item card styling */
 .item-card {
@@ -158,7 +172,8 @@ header {
 }
 
 .item-details .item-title {
-    margin-left: 10px;
+    align-self: flex-start;
+    width: fit-content;
 }
 
 .item-card img {
@@ -167,6 +182,7 @@ header {
 
 .item-title {
     font-size: 1.2em;
+    margin-bottom: 5px;
 }
 
 .item-description {
@@ -175,7 +191,9 @@ header {
 }
 
 .item-info {
-    margin-top: 5px;
+    display: inline-block;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .item-quantity {
@@ -218,7 +236,8 @@ header {
     right: 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 #add-item-fab:hover {
@@ -231,15 +250,20 @@ header {
 }
 
 #items-grid {
-    display: flex; /* Use flexbox */
-    flex-direction: column; /* Stack items vertically */
-    gap: 1px; /* Adjust gap as needed */
+    display: flex;
+    /* Use flexbox */
+    flex-direction: column;
+    /* Stack items vertically */
+    gap: 1px;
+    /* Adjust gap as needed */
     width: 100%;
 }
 
-#folder-grid, #item-grid {
-    display: flex; /* Use flexbox to stack items in each section */
-    flex-direction: column; /* Stack items vertically */
-    gap: 1px; 
-    width: 100%;
+#folder-grid,
+#item-grid {
+    display: flex;
+    /* Use flexbox to stack items in each section */
+    flex-direction: column;
+    /* Stack items vertically */
+    gap: 1px;
 }

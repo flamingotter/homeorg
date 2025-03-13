@@ -55,7 +55,7 @@
     <script>
         let currentFolderId = null; // Track the current folder ID
 
-        function updateCounts() {
+        function updateCounts(totalQuantity) {
             let url = '/folders/count';
             if (currentFolderId) {
                 url = `/folders/${currentFolderId}/count`;
@@ -69,10 +69,8 @@
                 .catch(error => console.error('Error fetching folder count:', error));
 
             let itemsUrl = '/items/count';
-            let quantityUrl = '/items/quantity';
             if (currentFolderId) {
                 itemsUrl = `/folders/${currentFolderId}/items/count`;
-                quantityUrl = `/folders/${currentFolderId}/items/quantity`;
             }
 
             fetch(itemsUrl)
@@ -82,12 +80,10 @@
                 })
                 .catch(error => console.error('Error fetching item count:', error));
 
-            fetch(quantityUrl)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('total-quantity').textContent = data;
-                })
-                .catch(error => console.error('Error fetching total quantity:', error));
+            // Update total quantity if provided
+            if (totalQuantity !== undefined) {
+                document.getElementById('total-quantity').textContent = totalQuantity;
+            }
         }
 
         function displayItems(items) {
@@ -201,16 +197,19 @@
         function loadRootView() {
             currentFolderId = null;
             document.getElementById('back-button').style.display = 'none';
-            document.getElementById('header-title').textContent = "HomeOrg"; // Set title
+            document.getElementById('header-title').textContent = "HomeOrg";
 
             Promise.all([
                 fetch('/folders/').then(response => response.json()),
                 fetch('/items/').then(response => response.json())
             ])
-                .then(([folders, items]) => {
-                    displayFolders(folders);
+                .then(([folderData, items]) => {
+                    displayFolders(folderData.folders);
                     displayItems(items);
-                    updateCounts();
+                    updateCounts(folderData.total_quantity); // Pass the total quantity
+
+                    // Update the total quantity display
+                    document.getElementById('total-quantity').textContent = folderData.total_quantity;
                 })
                 .catch(error => console.error('Error loading root view:', error));
         }
@@ -218,23 +217,22 @@
         function loadFolderView() {
             document.getElementById('back-button').style.display = 'block';
 
-            // Fetch folder details to get the name
             fetch(`/folders/${currentFolderId}`)
                 .then(response => response.json())
                 .then(folder => {
-                    document.getElementById('header-title').textContent = folder.name; // Set title
+                    document.getElementById('header-title').textContent = folder.name;
 
-                    // Now, load the subfolders and items
                     Promise.all([
                         fetch(`/folders/${currentFolderId}/folders`).then(response => response.json()),
-                        fetch(`/folders/${currentFolderId}/items`).then(response => response.json())
+                        fetch(`/folders/${currentFolderId}/items`).then(response => response.json()),
+                        fetch(`/folders/${currentFolderId}/quantity`).then(response => response.json()) // Fetch folder quantity
                     ])
-                        .then(([subFolders, items]) => {
+                        .then(([subFolders, items, quantityData]) => { // Receive quantityData
                             document.getElementById('folder-grid').innerHTML = '';
                             document.getElementById('item-grid').innerHTML = '';
                             displayFolders(subFolders);
                             displayItems(items);
-                            updateCounts();
+                            updateCounts(quantityData.quantity); // Pass folder quantity
                         })
                         .catch(error => console.error(`Error loading folder view for ${currentFolderId}:`, error));
                 })

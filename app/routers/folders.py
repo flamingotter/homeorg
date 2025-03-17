@@ -1,7 +1,7 @@
 from typing import List, Optional
-from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, APIRouter # type: ignore
+from sqlalchemy import func # type: ignore
+from sqlalchemy.orm import Session # type: ignore
 from app import models
 from app.database import get_db
 import logging

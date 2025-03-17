@@ -35,6 +35,25 @@
             <div id="item-grid"></div>
         </div>
 
+        <div id="item-details-view" style="display: none;">
+            <header>
+                <div id="item-details-back-button">
+                    <i class="material-icons">arrow_back</i>
+                </div>
+                <span id="item-details-title"></span>
+                <div class="header-icons">
+                    <i class="material-icons">more_vert</i>
+                </div>
+            </header>
+            <div id="item-details-content">
+                <img id="item-details-image" src="" alt="Item Image" class="thumbnail">
+                <div id="item-details-quantity"></div>
+                <div id="item-details-date"></div>
+                <div id="item-details-tags"></div>
+                <div id="item-details-notes"></div>
+            </div>
+        </div>
+
         <button id="add-item-fab">
             <i class="material-icons">add</i>
         </button>
@@ -88,7 +107,7 @@
 
         function displayItems(items) {
             const itemGrid = document.getElementById('item-grid');
-            itemGrid.innerHTML = ''; // Clear the item grid
+            itemGrid.innerHTML = '';
 
             items.forEach(item => {
                 if (item.folder_id === currentFolderId || (currentFolderId === null && item.folder_id === null)) {
@@ -109,10 +128,38 @@
                             <i class="material-icons">more_vert</i>
                         </div>
                     `;
+
+                    itemCard.addEventListener('click', () => {
+                        displayItemDetails(item);
+                    });
+
                     itemGrid.appendChild(itemCard);
-                    console.log('item card HTML:', itemCard.outerHTML);
                 }
             });
+        }
+
+        document.getElementById('item-details-back-button').addEventListener('click', () => {
+            document.getElementById('item-details-view').style.display = 'none';
+            document.getElementById('items-grid').style.display = 'block';
+            document.querySelector('.counts').style.display = 'block'; // Show the counts div
+            if(currentFolderId){
+                document.getElementById('back-button').style.display = 'block';
+            }
+
+        });
+
+        function displayItemDetails(item) {
+            document.getElementById('item-details-title').textContent = item.name;
+            document.getElementById('item-details-image').src = item.image_url || 'https://via.placeholder.com/80';
+            document.getElementById('item-details-quantity').textContent = `Quantity: ${item.quantity} ${item.unit}`;
+            document.getElementById('item-details-date').textContent = `Date Acquired: ${item.date_acquired || 'N/A'}`;
+            document.getElementById('item-details-tags').textContent = `Tags: ${item.tags || 'N/A'}`;
+            document.getElementById('item-details-notes').textContent = `Notes: ${item.notes || 'N/A'}`;
+
+            document.getElementById('items-grid').style.display = 'none';
+            document.getElementById('item-details-view').style.display = 'block';
+            document.getElementById('back-button').style.display = 'none';
+            document.querySelector('.counts').style.display = 'none'; // Hide the counts div
         }
 
         function displayFolders(folders) {
@@ -220,19 +267,19 @@
             fetch(`/folders/${currentFolderId}`)
                 .then(response => response.json())
                 .then(folder => {
-                    document.getElementById('header-title').textContent = folder.name;
+                    document.getElementById('header-title').textContent = folder.name; // Ensure this line exists
 
                     Promise.all([
                         fetch(`/folders/${currentFolderId}/folders`).then(response => response.json()),
                         fetch(`/folders/${currentFolderId}/items`).then(response => response.json()),
-                        fetch(`/folders/${currentFolderId}/quantity`).then(response => response.json()) // Fetch folder quantity
+                        fetch(`/folders/${currentFolderId}/quantity`).then(response => response.json())
                     ])
-                        .then(([subFolders, items, quantityData]) => { // Receive quantityData
+                        .then(([subFolders, items, quantityData]) => {
                             document.getElementById('folder-grid').innerHTML = '';
                             document.getElementById('item-grid').innerHTML = '';
                             displayFolders(subFolders);
                             displayItems(items);
-                            updateCounts(quantityData.quantity); // Pass folder quantity
+                            updateCounts(quantityData.quantity);
                         })
                         .catch(error => console.error(`Error loading folder view for ${currentFolderId}:`, error));
                 })

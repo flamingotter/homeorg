@@ -5,13 +5,18 @@
     <title>HomeOrg</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <div id="back-button" style="display: none;">
-                <i class="material-icons">arrow_back</i>
+            <div class="header-navigation"> <div id="back-button" style="display: none;">
+                    <i class="material-icons">arrow_back</i>
+                </div>
+                <div id="home-button" style="display: none; cursor: pointer;">
+                    <i class="material-icons">home</i>
+                </div>
             </div>
             <span id="header-title">HomeOrg</span>  <div class="header-icons">
                 <div class="search-icon">
@@ -244,6 +249,7 @@
         function loadRootView() {
             currentFolderId = null;
             document.getElementById('back-button').style.display = 'none';
+            document.getElementById('home-button').style.display = 'none'; // Hide home button on root
             document.getElementById('header-title').textContent = "HomeOrg";
 
             Promise.all([
@@ -263,6 +269,7 @@
 
         function loadFolderView() {
             document.getElementById('back-button').style.display = 'block';
+            document.getElementById('home-button').style.display = 'block'; // Show home button when in a folder
 
             fetch(`/folders/${currentFolderId}`)
                 .then(response => response.json())
@@ -300,6 +307,11 @@
                     })
                     .catch(error => console.error(`Error fetching parent folder for ${currentFolderId}:`, error));
             }
+        });
+
+        // New event listener for the home button
+        document.getElementById('home-button').addEventListener('click', () => {
+            loadRootView(); // Call loadRootView to go to the root level
         });
 
         loadRootView(); // Load root view on page load

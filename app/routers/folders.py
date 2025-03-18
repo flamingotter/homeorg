@@ -106,3 +106,76 @@ def read_folder(folder_id: int, db: Session = Depends(get_db)):
     """Retrieve a specific folder by ID."""
     folder = get_folder_by_id(db, folder_id)
     return folder.__dict__
+
+@router.delete("/folders/{folder_id}", status_code=204)
+def delete_folder(folder_id: int, db: Session = Depends(get_db)):
+    """Delete a folder by its ID."""
+    folder = get_folder_by_id(db, folder_id)
+
+    # Recursively find and delete all child folders and their items
+    def delete_recursive(db: Session, current_folder_id: int):
+        child_folders = db.query(models.Folder).filter(models.Folder.parent_id == current_folder_id).all()
+        for child_folder in child_folders:
+            delete_recursive(db, child_folder.id)
+            # Delete items within the child folder
+            db.query(models.Item).filter(models.Item.folder_id == child_folder.id).delete(synchronize_session=False)
+            db.delete(child_folder)
+
+        # Delete items directly within the current folder
+        db.query(models.Item).filter(models.Item.folder_id == current_folder_id).delete(synchronize_session=False)
+        db.delete(folder) # Delete the current folder after its children
+
+    delete_recursive(db, folder_id)
+
+    # If the folder has no children, we can delete it directly
+    # db.query(models.Item).filter(models.Item.folder_id == folder_id).delete(synchronize_session=False)
+    # db.delete(folder)
+
+    db.commit()
+    return None
+
+def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_id: Optional[int] = None) -> models.Folder:
+    """Recursively clones a folder and its contents."""
+    db_folder = models.Folder(
+        name=f"Clone of {original_folder.name}",
+        parent_id=parent_id,
+        description=original_folder.description,
+        notes=original_folder.notes,
+        tags=original_folder.tags,
+        image_url=original_folder.image_url
+    )
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+
+    # Clone items in the current folder
+    original_items = db.query(models.Item).filter(models.Item.folder_id == original_folder.id).all()
+    for item in original_items:
+        db_item = models.Item(
+            name=item.name,
+            quantity=item.quantity,
+            unit=item.unit,
+            folder_id=db_folder.id,
+            description=item.description,
+            notes=item.notes,
+            tags=item.tags,
+            image_url=item.image_url,
+            date_acquired=item.date_acquired
+        )
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+
+    # Recursively clone child folders
+    original_child_folders = db.query(models.Folder).filter(models.Folder.parent_id == original_folder.id).all()
+    for child_folder in original_child_folders:
+        clone_folder_recursive(db, child_folder, parent_id=db_folder.id)
+
+    return db_folder
+
+@router.post("/folders/{folder_id}/clone", response_model=None)
+def clone_folder(folder_id: int, db: Session = Depends(get_db)):
+    """Clone a folder and its contents."""
+    original_folder = get_folder_by_id(db, folder_id)
+    new_folder = clone_folder_recursive(db, original_folder, parent_id=original_folder.parent_id)
+    return {"new_folder_id": new_folder.id}

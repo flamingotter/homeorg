@@ -33,6 +33,7 @@ class Folder(Base):
 
     children = relationship("Folder", remote_side=[id], foreign_keys=[parent_id])
     items = relationship("Item", back_populates="folder")
+    images = relationship("Image", back_populates="folder")
 
 class Item(Base):
     __tablename__ = "items"
@@ -56,6 +57,8 @@ class Image(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String)
-    item_id = Column(Integer, ForeignKey("items.id"))
+    item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
 
     item = relationship("Item", back_populates="images")
+    folder = relationship("Folder", back_populates="images")

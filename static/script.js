@@ -40,7 +40,10 @@ function displayItems(items) {
             const itemCard = document.createElement('div');
             itemCard.className = 'item-card';
 
-            const imageUrl = item.image_url || 'https://via.placeholder.com/80';
+            let imageUrl = 'https://via.placeholder.com/80'; // Default placeholder
+            if (item.images && item.images.length > 0) {
+                imageUrl = `/static/images/${item.images[0].filename}`; // Use the first image if available
+            }
 
             itemCard.innerHTML = `
                 <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
@@ -76,7 +79,27 @@ document.getElementById('item-details-back-button').addEventListener('click', ()
 
 function displayItemDetails(item) {
     document.getElementById('item-details-title').textContent = item.name;
-    document.getElementById('item-details-image').src = item.image_url || 'https://via.placeholder.com/80';
+
+    // Handle multiple images
+    const imageContainer = document.getElementById('item-details-image-container');
+    imageContainer.innerHTML = ''; // Clear previous images
+
+    if (item.images && item.images.length > 0) {
+        item.images.forEach(image => {
+            const img = document.createElement('img');
+            img.src = `/static/images/${image.filename}`;
+            img.alt = item.name;
+            img.style.maxWidth = '100px'; // Adjust as needed
+            img.style.maxHeight = '100px'; // Adjust as needed
+            imageContainer.appendChild(img);
+        });
+    } else {
+        const img = document.createElement('img');
+        img.src = 'https://via.placeholder.com/80';
+        img.alt = 'Placeholder';
+        imageContainer.appendChild(img);
+    }
+
     document.getElementById('item-details-quantity').textContent = `Quantity: ${item.quantity} ${item.unit}`;
     document.getElementById('item-details-date').textContent = `Date Acquired: ${item.date_acquired || 'N/A'}`;
     document.getElementById('item-details-tags').textContent = `Tags: ${item.tags || 'N/A'}`;
@@ -85,56 +108,45 @@ function displayItemDetails(item) {
     document.getElementById('items-grid').style.display = 'none';
     document.getElementById('item-details-view').style.display = 'block';
     document.getElementById('back-button').style.display = 'none';
-    document.querySelector('.counts').style.display = 'none'; // Hide the counts div
+    document.querySelector('.counts').style.display = 'none';
 }
 
 function displayFolders(folders) {
     const folderGrid = document.getElementById('folder-grid');
-    folderGrid.innerHTML = ''; // Clear the folder grid
+    folderGrid.innerHTML = '';
 
-    // Sort folders alphabetically by name
     const sortedFolders = folders.slice().sort((a, b) => {
         const nameA = a.name.toUpperCase();
         const nameB = b.name.toUpperCase();
-        if (nameA < nameB) {
-            return -1;
-        }
-        if (nameA > nameB) {
-            return 1;
-        }
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
         return 0;
     });
 
-    // Array to store promises for all fetch operations
     const fetchPromises = [];
 
-    // First, fetch data for all folders
     sortedFolders.forEach(folder => {
         if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
-            // Create promises for fetching subfolder count and item count
             const subfolderCountPromise = fetch(`/folders/${folder.id}/count`).then(response => response.json());
             const itemCountPromise = fetch(`/folders/${folder.id}/items/count`).then(response => response.json());
 
-            // Add a promise that resolves with the folder data after both fetches complete
             const allDataPromise = Promise.all([subfolderCountPromise, itemCountPromise])
-                .then(([subfolderCount, itemCount]) => ({
-                    folder,
-                    subfolderCount,
-                    itemCount
-                }));
+                .then(([subfolderCount, itemCount]) => ({ folder, subfolderCount, itemCount }));
 
             fetchPromises.push(allDataPromise);
         }
     });
 
-    // After all data is fetched, create and append the folder cards
     Promise.all(fetchPromises)
         .then(folderDataArray => {
             folderDataArray.forEach(({ folder, subfolderCount, itemCount }) => {
                 const folderCard = document.createElement('div');
                 folderCard.className = 'folder-card';
 
-                const imageUrl = folder.image_url || 'https://via.placeholder.com/80';
+                let imageUrl = 'https://via.placeholder.com/80'; // Default placeholder
+                if (folder.images && folder.images.length > 0) {
+                    imageUrl = `/static/images/${folder.images[0].filename}`; // Use the first image if available
+                }
 
                 let folderInfoHTML = '';
                 if (subfolderCount > 0) {
@@ -162,14 +174,13 @@ function displayFolders(folders) {
                 `;
 
                 folderCard.addEventListener('click', (event) => {
-                    // Prevent opening the folder if the options button or menu is clicked
                     if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
                         currentFolderId = folder.id;
                         loadFolderView();
                     }
                 });
 
-                folderGrid.appendChild(folderCard); // Append after all data is ready
+                folderGrid.appendChild(folderCard);
             });
         })
         .catch(error => console.error('Error fetching folder data:', error));
@@ -205,7 +216,7 @@ document.addEventListener('click', (event) => {
         const menuItem = target.textContent;
         const folderId = target.parentNode.dataset.folderId;
         target.parentNode.style.display = 'none'; // Close the menu
-
+    
         if (menuItem === 'Details') {
             // Implement folder details view
             console.log(`Details clicked for folder ID: ${folderId}`);
@@ -216,7 +227,21 @@ document.addEventListener('click', (event) => {
                     .then(response => {
                         if (response.ok) {
                             console.log(`Folder ID: ${folderId} deleted successfully.`);
-                            loadFolderView(); // Reload the current view
+                            // Fetch the parent folder ID and navigate to it
+                            fetch(`/folders/${folderId}/parent`)
+                                .then(response => response.json())
+                                .then(parent => {
+                                    if (parent) {
+                                        currentFolderId = parent.id;
+                                        loadFolderView();
+                                    } else {
+                                        loadRootView();
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error("Error fetching parent folder:", error);
+                                    loadRootView(); // Fallback to root view if parent fetch fails
+                                });
                         } else {
                             console.error('Error deleting folder:', response.status);
                             // Optionally display an error message to the user

@@ -47,7 +47,7 @@ def create_folder(folder: dict, db: Session = Depends(get_db)):
     if existing_folder:
         raise HTTPException(status_code=400, detail="Folder already exists")
 
-    db_folder = models.Folder(name=folder["name"], parent_id=folder.get("parent_id"), description=folder.get("description"), notes=folder.get("notes"), tags=folder.get("tags"))
+    db_folder = models.Folder(name=folder["name"], parent_id=folder.get("parent_id"), description=folder.get("description"), notes=folder.get("notes"), tags=folder.get("tags")) # Remove image_url here
     db.add(db_folder)
     db.commit()
     db.refresh(db_folder)
@@ -75,17 +75,35 @@ def get_parent_folder(folder_id: int, db: Session = Depends(get_db)):
 def read_root_folders(db: Session = Depends(get_db)):
     folders = db.query(models.Folder).filter(models.Folder.parent_id == None).all()
     total_quantity = calculate_folder_quantity(db, None)
-    return {"folders": [folder.__dict__ for folder in folders], "total_quantity": total_quantity}
+    folder_list = []
+    for folder in folders:
+        folder_data = folder.__dict__
+        images = db.query(models.Image).filter(models.Image.folder_id == folder.id).all()
+        folder_data["images"] = [image.__dict__ for image in images]
+        folder_list.append(folder_data)
+    return {"folders": folder_list, "total_quantity": total_quantity}
 
 @router.get("/folders/{folder_id}/folders")
 def read_sub_folders(folder_id: int, db: Session = Depends(get_db)):
     folders = db.query(models.Folder).filter(models.Folder.parent_id == folder_id).all()
-    return [folder.__dict__ for folder in folders]
+    folder_list = []
+    for folder in folders:
+        folder_data = folder.__dict__
+        images = db.query(models.Image).filter(models.Image.folder_id == folder.id).all()
+        folder_data["images"] = [image.__dict__ for image in images]
+        folder_list.append(folder_data)
+    return folder_list
 
 @router.get("/folders/{folder_id}/items")
 def read_folder_items(folder_id: int, db: Session = Depends(get_db)):
     items = db.query(models.Item).filter(models.Item.folder_id == folder_id).all()
-    return [item.__dict__ for item in items]
+    item_list = []
+    for item in items:
+        item_data = item.__dict__
+        images = db.query(models.Image).filter(models.Image.item_id == item.id).all()
+        item_data["images"] = [image.__dict__ for image in images]
+        item_list.append(item_data)
+    return item_list
 
 @router.patch("/folders/{folder_id}", response_model=None)
 def update_folder(folder_id: int, folder: dict, db: Session = Depends(get_db)):
@@ -103,9 +121,11 @@ def get_folder_quantity(folder_id: int, db: Session = Depends(get_db)):
 
 @router.get("/folders/{folder_id}")
 def read_folder(folder_id: int, db: Session = Depends(get_db)):
-    """Retrieve a specific folder by ID."""
     folder = get_folder_by_id(db, folder_id)
-    return folder.__dict__
+    folder_data = folder.__dict__
+    images = db.query(models.Image).filter(models.Image.folder_id == folder_id).all()
+    folder_data["images"] = [image.__dict__ for image in images]
+    return folder_data
 
 @router.delete("/folders/{folder_id}", status_code=204)
 def delete_folder(folder_id: int, db: Session = Depends(get_db)):
@@ -135,20 +155,17 @@ def delete_folder(folder_id: int, db: Session = Depends(get_db)):
     return None
 
 def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_id: Optional[int] = None) -> models.Folder:
-    """Recursively clones a folder and its contents."""
     db_folder = models.Folder(
         name=f"Clone of {original_folder.name}",
         parent_id=parent_id,
         description=original_folder.description,
         notes=original_folder.notes,
         tags=original_folder.tags,
-        image_url=original_folder.image_url
-    )
+    ) #Removed image_url
     db.add(db_folder)
     db.commit()
     db.refresh(db_folder)
 
-    # Clone items in the current folder
     original_items = db.query(models.Item).filter(models.Item.folder_id == original_folder.id).all()
     for item in original_items:
         db_item = models.Item(
@@ -159,14 +176,12 @@ def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_i
             description=item.description,
             notes=item.notes,
             tags=item.tags,
-            image_url=item.image_url,
             date_acquired=item.date_acquired
-        )
+        ) # Removed image_url
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
 
-    # Recursively clone child folders
     original_child_folders = db.query(models.Folder).filter(models.Folder.parent_id == original_folder.id).all()
     for child_folder in original_child_folders:
         clone_folder_recursive(db, child_folder, parent_id=db_folder.id)

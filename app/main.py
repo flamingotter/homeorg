@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles #import StaticFiles
 from app.database import create_database_and_tables
-from app.routers import items, folders
+from app.routers import items, folders, images
 
 import sqlalchemy
 
@@ -14,6 +14,7 @@ create_database_and_tables()
 
 app.include_router(items.router)
 app.include_router(folders.router)
+app.include_router(images.router)
 
 app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 

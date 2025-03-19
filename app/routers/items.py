@@ -29,11 +29,15 @@ def get_root_item_quantity(db: Session = Depends(get_db)):
 
 @router.get("/items/")
 def read_root_items(db: Session = Depends(get_db)):
-    """
-    Retrieve only root items (items with folder_id = None).
-    """
-    items = db.query(models.Item).filter(models.Item.folder_id == None).all()
-    return [item.__dict__ for item in items]
+    items = db.query(models.Item).all()
+    item_list = []
+    for item in items:
+        images = db.query(models.Image).filter(models.Image.item_id == item.id).all()
+        item_data = item.__dict__
+        item_data["images"] = [{"id": image.id, "filename": image.filename, "item_id": image.item_id, "folder_id": image.folder_id} for image in images]
+        item_list.append(item_data)
+        logging.info(f"Item Data: {item_data}")
+    return item_list
 
 @router.get("/items/{item_id}")
 def read_item(item_id: int, db: Session = Depends(get_db)):
@@ -41,7 +45,9 @@ def read_item(item_id: int, db: Session = Depends(get_db)):
     if db_item is None:
         raise HTTPException(status_code=404, detail="Item not found")
     item_dict = db_item.__dict__
-    item_dict['folder_id'] = db_item.folder_id #Add the folder ID to the dictionary.
+    item_dict['folder_id'] = db_item.folder_id
+    images = db.query(models.Image).filter(models.Image.item_id == item_id).all()
+    item_dict["images"] = [image.__dict__ for image in images]
     return item_dict
 
 @router.post("/items/")
@@ -63,7 +69,7 @@ def create_item(item: dict, db: Session = Depends(get_db)):
         tag=item.get("tag"),
         acquired_date=acquired_date_obj,
         notes=item.get("notes")
-    )
+    ) # Removed image_url
     db.add(db_item)
     db.commit()
     db.refresh(db_item)

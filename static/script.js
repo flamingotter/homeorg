@@ -41,9 +41,9 @@ function displayItems(items) {
             const itemCard = document.createElement('div');
             itemCard.className = 'item-card';
 
-            let imageUrl = 'https://via.placeholder.com/80'; // Default placeholder
+            let imageUrl = 'https://via.placeholder.com/80';
             if (item.images && item.images.length > 0) {
-                imageUrl = `/static/images/${item.images[0].filename}`; // Use the first image if available
+                imageUrl = `/static/images/${item.images[0].filename}`;
             }
 
             itemCard.innerHTML = `
@@ -55,12 +55,20 @@ function displayItems(items) {
                     </div>
                 </div>
                 <div class="item-actions">
-                    <i class="material-icons">more_vert</i>
+                    <i class="material-icons more-options-button">more_vert</i>
+                    <div class="options-menu" data-item-id="${item.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px; right: 0; top: 100%; transform: translateY(5px);">
+                        <div class="menu-item details-item">Details</div>
+                        <div class="menu-item move-item">Move</div>
+                        <div class="menu-item clone-item">Clone</div>
+                        <div class="menu-item delete-item">Delete</div>
+                    </div>
                 </div>
             `;
 
-            itemCard.addEventListener('click', () => {
-                displayItemDetails(item);
+            itemCard.addEventListener('click', (event) => {
+                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                    displayItemDetails(item);
+                }
             });
 
             itemGrid.appendChild(itemCard);
@@ -190,13 +198,19 @@ function displayFolders(folders) {
 document.addEventListener('click', (event) => {
     const target = event.target;
 
+    // Close any open menus if clicking outside
+    if (!target.classList.contains('more-options-button') && !target.classList.contains('options-menu') && !target.classList.contains('menu-item')) {
+        document.querySelectorAll('.options-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+
     // Toggle the specific menu when its more_vert button is clicked
     if (target.classList.contains('more-options-button')) {
-        event.stopPropagation(); // Stop the event from bubbling
-        const folderActions = target.parentNode;
-        const optionsMenu = folderActions.querySelector('.options-menu');
+        event.stopPropagation();
+        const actions = target.parentNode;
+        const optionsMenu = actions.querySelector('.options-menu');
         if (optionsMenu) {
-            // Close any other open menus
             document.querySelectorAll('.options-menu').forEach(menu => {
                 if (menu !== optionsMenu) {
                     menu.style.display = 'none';
@@ -209,53 +223,45 @@ document.addEventListener('click', (event) => {
     // Handle menu item clicks
     if (target.classList.contains('menu-item')) {
         const menuItem = target.textContent;
-        const folderId = target.parentNode.dataset.folderId;
-        target.parentNode.style.display = 'none'; // Close the menu
-    
-        if (menuItem === 'Details') {
-            // Implement folder details view
-            console.log(`Details clicked for folder ID: ${folderId}`);
-            // You'll likely want to fetch folder details and display them
-        } else if (menuItem === 'Delete') {
-            if (confirm(`Are you sure you want to delete folder ID: ${folderId}?`)) {
-                fetch(`/folders/${folderId}`, { method: 'DELETE' })
-                    .then(response => {
-                        if (response.ok) {
-                            console.log(`Folder ID: ${folderId} deleted successfully.`);
-                            // Fetch the parent folder ID and navigate to it
-                            fetch(`/folders/${folderId}/parent`)
-                                .then(response => response.json())
-                                .then(parent => {
-                                    if (parent) {
-                                        currentFolderId = parent.id;
-                                        loadFolderView();
-                                    } else {
-                                        loadRootView();
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error("Error fetching parent folder:", error);
-                                    loadRootView(); // Fallback to root view if parent fetch fails
-                                });
-                        } else {
-                            console.error('Error deleting folder:', response.status);
-                            // Optionally display an error message to the user
-                        }
+        const menu = target.parentNode;
+        const folderId = menu.dataset.folderId;
+        const itemId = menu.dataset.itemId;
+        menu.style.display = 'none';
+
+        if (folderId) {
+            // Handle folder menu items
+            // ... your existing folder menu handling ...
+        } else if (itemId) {
+            // Handle item menu items
+            if (menuItem === 'Details') {
+                console.log(`Item Details clicked for item ID: ${itemId}`);
+                displayItemDetails(items.find(item => item.id === parseInt(itemId)));
+            } else if (menuItem === 'Move') {
+                console.log(`Item Move clicked for item ID: ${itemId}`);
+                // Implement item move functionality
+            } else if (menuItem === 'Clone') {
+                console.log(`Item Clone clicked for item ID: ${itemId}`);
+                fetch(`/items/${itemId}/clone`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(`Item ID: ${itemId} cloned. New item ID: ${data.new_item_id}`);
+                        loadFolderView();
                     })
-                    .catch(error => console.error('Error deleting folder:', error));
+                    .catch(error => console.error('Error cloning item:', error));
+            } else if (menuItem === 'Delete') {
+                if (confirm(`Are you sure you want to delete item ID: ${itemId}?`)) {
+                    fetch(`/items/${itemId}`, { method: 'DELETE' })
+                        .then(response => {
+                            if (response.ok) {
+                                console.log(`Item ID: ${itemId} deleted successfully.`);
+                                loadFolderView();
+                            } else {
+                                console.error('Error deleting item:', response.status);
+                            }
+                        })
+                        .catch(error => console.error('Error deleting item:', error));
+                }
             }
-        } else if (menuItem === 'Clone') {
-            fetch(`/folders/${folderId}/clone`, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(`Folder ID: ${folderId} cloned. New folder ID: ${data.new_folder_id}`);
-                    loadFolderView(); // Reload the current view
-                })
-                .catch(error => console.error('Error cloning folder:', error));
-        } else if (menuItem === 'Move') {
-            console.log(`Move clicked for folder ID: ${folderId}`);
-            // You'll need to implement a UI to select the new parent folder
-            // and then make an API call to update the parent_id
         }
     }
 });

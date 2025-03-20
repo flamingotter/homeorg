@@ -1,3 +1,4 @@
+// /static/static.js
 let currentFolderId = null; // Track the current folder ID
 
 function updateCounts(totalQuantity) {
@@ -165,9 +166,9 @@ function displayFolders(folders) {
                     <div class="folder-actions">
                         <i class="material-icons more-options-button">more_vert</i>
                         <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
+                            <div class="menu-item details-item">Details</div>
                             <div class="menu-item move-item">Move</div>
                             <div class="menu-item clone-item">Clone</div>
-                            <div class="menu-item details-item">Details</div>
                             <div class="menu-item delete-item">Delete</div>
                         </div>
                     </div>
@@ -189,15 +190,9 @@ function displayFolders(folders) {
 document.addEventListener('click', (event) => {
     const target = event.target;
 
-    // Close any open menus if clicking outside
-    if (!target.classList.contains('more-options-button') && !target.classList.contains('options-menu') && !target.classList.contains('menu-item')) {
-        document.querySelectorAll('.options-menu').forEach(menu => {
-            menu.style.display = 'none';
-        });
-    }
-
     // Toggle the specific menu when its more_vert button is clicked
     if (target.classList.contains('more-options-button')) {
+        event.stopPropagation(); // Stop the event from bubbling
         const folderActions = target.parentNode;
         const optionsMenu = folderActions.querySelector('.options-menu');
         if (optionsMenu) {

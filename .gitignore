@@ -1,4 +1,5 @@
 /data/data.db
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -136,3 +137,7 @@ dmypy.json
 *.temp
 tmp/
 temp/
+
+#Alembic 
+alembic/versions/
+# alembic.ini #if it contains sensitive info

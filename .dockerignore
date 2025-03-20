@@ -26,3 +26,6 @@ local_settings.py
 *.log
 *.tmp
 tmp/
+
+#Alembic 
+alembic/versions/

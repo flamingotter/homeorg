@@ -72,8 +72,24 @@ header {
 }
 
 /* Item Grid and Folder Grid Styles */
-#items-grid,
-#folder-grid,
+/* Item Grid Styles */
+#items-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    padding-bottom: 80px; /* Add padding to the bottom */
+}
+
+/* Folder Grid Styles */
+#folder-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Item Grid (Within a Folder) Styles */
 #item-grid {
     display: flex;
     flex-direction: column;

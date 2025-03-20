@@ -334,4 +334,17 @@ document.getElementById('home-button').addEventListener('click', () => {
     loadRootView(); // Call loadRootView to go to the root level
 });
 
+window.addEventListener('scroll', () => {
+    const fab = document.getElementById('add-item-fab');
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = window.scrollY;
+    const clientHeight = window.innerHeight;
+
+    if (scrollTop + clientHeight >= scrollHeight - 50) { // Adjust '50' as needed
+        fab.style.display = 'none';
+    } else {
+        fab.style.display = 'block';
+    }
+});
+
 loadRootView(); // Load root view on page load

@@ -44,10 +44,16 @@ def read_item(item_id: int, db: Session = Depends(get_db)):
 def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
     """Create a new item."""
     db_item = models.Item(**item.dict())
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item
+    try:
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+        return db_item
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        db.close()
 
 @router.post("/items/{item_id}/images/")
 async def upload_image(item_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -101,9 +107,15 @@ def update_item(item_id: int, item: schemas.ItemUpdate, db: Session = Depends(ge
     for key, value in item.dict(exclude_unset=True).items():
         setattr(db_item, key, value)
 
-    db.commit()
-    db.refresh(db_item)
-    return db_item
+    try:
+        db.commit()
+        db.refresh(db_item)
+        return db_item
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        db.close()
 
 @router.post("/items/{item_id}/clone") 
 def clone_item(item_id: int, db: Session = Depends(get_db)):
@@ -140,21 +152,21 @@ def clone_item(item_id: int, db: Session = Depends(get_db)):
 
     return db_item
 
-@router.delete("/items/{item_id}")
+@router.delete("/items/{item_id}", response_model=schemas.Item)
 def delete_item(item_id: int, db: Session = Depends(get_db)):
-    """Delete an item and its associated images."""
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    if not item:
+    """Delete an item by ID."""
+    db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
-
-    # Delete associated images
-    db.query(models.Image).filter(models.Image.item_id == item_id).delete()
-
-    # Delete the item
-    db.delete(item)
-    db.commit()
-
-    return {"message": "Item deleted successfully"}
+    try:
+        db.delete(db_item)
+        db.commit()
+        return db_item
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        db.close()
 
 @router.put("/items/{item_id}/move")
 def move_item(item_id: int, destination_folder_id: Optional[int] = None, db: Session = Depends(get_db)):

@@ -45,10 +45,16 @@ def calculate_folder_quantity(db: Session, folder_id: Optional[int]) -> int:
 def create_folder(folder: schemas.FolderCreate, db: Session = Depends(get_db)):
     """Create a new folder."""
     db_folder = models.Folder(**folder.dict())
-    db.add(db_folder)
-    db.commit()
-    db.refresh(db_folder)
-    return db_folder
+    try:
+        db.add(db_folder)
+        db.commit()
+        db.refresh(db_folder)
+        return db_folder
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        db.close()
 
 
 @router.get("/folders/count")
@@ -100,13 +106,21 @@ def read_folder_items(folder_id: int, db: Session = Depends(get_db)):
 def update_folder(folder_id: int, folder: schemas.FolderUpdate, db: Session = Depends(get_db)):
     """Update an existing folder."""
     db_folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
-    if not db_folder:
+    if db_folder is None:
         raise HTTPException(status_code=404, detail="Folder not found")
+
     for key, value in folder.dict(exclude_unset=True).items():
         setattr(db_folder, key, value)
-    db.commit()
-    db.refresh(db_folder)
-    return db_folder
+
+    try:
+        db.commit()
+        db.refresh(db_folder)
+        return db_folder
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        db.close()
 
 @router.get("/folders/{folder_id}/quantity")
 def get_folder_quantity(folder_id: int, db: Session = Depends(get_db)):
@@ -124,32 +138,39 @@ def read_folder(folder_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/folders/{folder_id}")
 def delete_folder(folder_id: int, db: Session = Depends(get_db)):
-    """Delete a folder and its contents, including images."""
+    """Delete a folder and its contents, including images, within a transaction."""
     folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
     if not folder:
         raise HTTPException(status_code=404, detail="Folder not found")
 
-    # Delete associated item images
-    items = db.query(models.Item).filter(models.Item.folder_id == folder_id).all()
-    for item in items:
-        db.query(models.Image).filter(models.Image.item_id == item.id).delete()
+    try:
+        # Delete associated item images
+        items = db.query(models.Item).filter(models.Item.folder_id == folder_id).all()
+        for item in items:
+            db.query(models.Image).filter(models.Image.item_id == item.id).delete()
 
-    # Delete associated folder images
-    db.query(models.Image).filter(models.Image.folder_id == folder_id).delete()
+        # Delete associated folder images
+        db.query(models.Image).filter(models.Image.folder_id == folder_id).delete()
 
-    # Delete items in the folder
-    db.query(models.Item).filter(models.Item.folder_id == folder_id).delete()
+        # Delete items in the folder
+        db.query(models.Item).filter(models.Item.folder_id == folder_id).delete()
 
-    # Recursively delete child folders
-    child_folders = db.query(models.Folder).filter(models.Folder.parent_id == folder_id).all()
-    for child_folder in child_folders:
-        delete_folder(child_folder.id, db)  # Recursive call
+        # Recursively delete child folders
+        child_folders = db.query(models.Folder).filter(models.Folder.parent_id == folder_id).all()
+        for child_folder in child_folders:
+            delete_folder(child_folder.id, db)  # Recursive call with db session
 
-    # Delete the folder itself
-    db.delete(folder)
-    db.commit()
+        # Delete the folder itself
+        db.delete(folder)
+        db.commit()
 
-    return {"message": "Folder deleted successfully"}
+        return {"message": "Folder deleted successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error during deletion: {str(e)}")
+    finally:
+        db.close()
 
 def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_id: Optional[int] = None) -> models.Folder:
     db_folder = models.Folder(

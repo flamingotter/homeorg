@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, database, schemas
+from typing import Optional
 
 router = APIRouter()
 
@@ -22,9 +23,14 @@ def create_image(image: schemas.ImageCreate, db: Session = Depends(get_db)):
     return db_image
 
 @router.get("/images/", response_model=list[schemas.Image])
-def read_images(db: Session = Depends(get_db)):
-    """Read all images."""
-    return db.query(models.Image).all()
+def read_images(item_id: Optional[int] = None, folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Read images, optionally filtered by item_id or folder_id."""
+    query = db.query(models.Image)
+    if item_id is not None:
+        query = query.filter(models.Image.item_id == item_id)
+    if folder_id is not None:
+        query = query.filter(models.Image.folder_id == folder_id)
+    return query.all()
 
 @router.get("/images/{image_id}", response_model=schemas.Image)
 def read_image(image_id: int, db: Session = Depends(get_db)):

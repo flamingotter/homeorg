@@ -32,52 +32,50 @@ function updateCounts(totalQuantity) {
     }
 }
 
-function displayItems(items) {
+async function displayItems(items) {
     const itemGrid = document.getElementById('item-grid');
     itemGrid.innerHTML = '';
 
-    items.forEach(item => {
+    for (const item of items) {
         if (item.folder_id === currentFolderId || (currentFolderId === null && item.folder_id === null)) {
+            const images = await fetch(`/images/?item_id=${item.id}`).then(response => response.json());
+
             const itemCard = document.createElement('div');
             itemCard.className = 'item-card';
 
             let imageUrl = 'https://via.placeholder.com/80';
-            fetch(`/images/?item_id=${item.id}`)
-                .then(response => response.json())
-                .then(images => {
-                    if (images && images.length > 0) {
-                        imageUrl = `/static/images/${images[0].filename}`;
-                    }
-                    itemCard.innerHTML = `
-                        <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
-                        <div class="item-details">
-                            <h3 class="item-title">${item.name}</h3>
-                            <div class="item-info">
-                                ${item.quantity} ${item.unit}
-                            </div>
-                        </div>
-                        <div class="item-actions">
-                            <i class="material-icons more-options-button">more_vert</i>
-                            <div class="options-menu" data-item-id="${item.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px; right: 0; top: 100%; transform: translateY(5px);">
-                                <div class="menu-item details-item">Details</div>
-                                <div class="menu-item move-item">Move</div>
-                                <div class="menu-item clone-item">Clone</div>
-                                <div class="menu-item delete-item">Delete</div>
-                            </div>
-                        </div>
-                    `;
+            if (images && images.length > 0) {
+                imageUrl = `/static/images/${images[0].filename}`;
+            }
 
-                    itemCard.addEventListener('click', (event) => {
-                        if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
-                            displayItemDetails(item);
-                        }
-                    });
+            itemCard.innerHTML = `
+                <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
+                <div class="item-details">
+                    <h3 class="item-title">${item.name}</h3>
+                    <div class="item-info">
+                        ${item.quantity} ${item.unit}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <i class="material-icons more-options-button">more_vert</i>
+                    <div class="options-menu" data-item-id="${item.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px; right: 0; top: 100%; transform: translateY(5px);">
+                        <div class="menu-item details-item">Details</div>
+                        <div class="menu-item move-item">Move</div>
+                        <div class="menu-item clone-item">Clone</div>
+                        <div class="menu-item delete-item">Delete</div>
+                    </div>
+                </div>
+            `;
 
-                    itemGrid.appendChild(itemCard);
-                })
-                .catch(error => console.error('Error fetching item images:', error));
+            itemCard.addEventListener('click', (event) => {
+                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                    displayItemDetails(item);
+                }
+            });
+
+            itemGrid.appendChild(itemCard);
         }
-    });
+    }
 }
 
 document.getElementById('item-details-back-button').addEventListener('click', () => {
@@ -129,7 +127,7 @@ function displayItemDetails(item) {
         .catch(error => console.error('Error fetching item images:', error));
 }
 
-function displayFolders(folders) {
+async function displayFolders(folders) {
     const folderGrid = document.getElementById('folder-grid');
     folderGrid.innerHTML = '';
 
@@ -141,91 +139,50 @@ function displayFolders(folders) {
         return 0;
     });
 
-    const fetchPromises = [];
-
-    sortedFolders.forEach(folder => {
+    for (const folder of sortedFolders) {
         if (folder.parent_id === currentFolderId || (currentFolderId === null && folder.parent_id === null)) {
-            const subfolderCountPromise = fetch(`/folders/${folder.id}/count`).then(response => response.json());
-            const itemCountPromise = fetch(`/folders/${folder.id}/items/count`).then(response => response.json());
+            const subfolderCount = await fetch(`/folders/${folder.id}/count`).then(response => response.json());
+            const itemCount = await fetch(`/folders/${folder.id}/items/count`).then(response => response.json());
+            const images = await fetch(`/images/?folder_id=${folder.id}`).then(response => response.json());
 
-            const allDataPromise = Promise.all([subfolderCountPromise, itemCountPromise])
-                .then(([subfolderCount, itemCount]) => ({ folder, subfolderCount, itemCount }));
+            const folderCard = document.createElement('div');
+            folderCard.className = 'folder-card';
 
-            fetchPromises.push(allDataPromise);
-        }
-    });
+            let imageUrl = 'https://via.placeholder.com/80';
+            if (images && images.length > 0) {
+                imageUrl = `/static/images/${images[0].filename}`;
+            }
 
-    Promise.all(fetchPromises)
-        .then(folderDataArray => {
-            folderDataArray.forEach(({ folder, subfolderCount, itemCount }) => {
-                const folderCard = document.createElement('div');
-                folderCard.className = 'folder-card';
+            folderCard.innerHTML = `
+                <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                <div class="folder-details">
+                    <h3 class="folder-title">${folder.name}</h3>
+                    <div class="folder-info">
+                        ${subfolderCount > 0 ? `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | ` : ''}
+                        Items ${itemCount > 0 ? itemCount : 0}
+                    </div>
+                </div>
+                <div class="folder-actions">
+                    <i class="material-icons more-options-button">more_vert</i>
+                    <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
+                        <div class="menu-item details-item">Details</div>
+                        <div class="menu-item move-item">Move</div>
+                        <div class="menu-item clone-item">Clone</div>
+                        <div class="menu-item delete-item">Delete</div>
+                    </div>
+                </div>
+            `;
 
-                let imageUrl = 'https://via.placeholder.com/80'; // Default placeholder
-                fetch(`/images/?folder_id=${folder.id}`)
-                    .then(response => response.json())
-                    .then(images => {
-                        if (images && images.length > 0) {
-                            imageUrl = `/static/images/${images[0].filename}`; // Use the first image if available
-                            folderCard.innerHTML = `
-                                <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
-                                <div class="folder-details">
-                                    <h3 class="folder-title">${folder.name}</h3>
-                                    <div class="folder-info">
-                                        ${subfolderCount > 0 ? `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | ` : ''}
-                                        Items ${itemCount > 0 ? itemCount : 0}
-                                    </div>
-                                </div>
-                                <div class="folder-actions">
-                                    <i class="material-icons more-options-button">more_vert</i>
-                                    <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
-                                        <div class="menu-item details-item">Details</div>
-                                        <div class="menu-item move-item">Move</div>
-                                        <div class="menu-item clone-item">Clone</div>
-                                        <div class="menu-item delete-item">Delete</div>
-                                    </div>
-                                </div>
-                            `;
-                            folderCard.addEventListener('click', (event) => {
-                                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
-                                    currentFolderId = folder.id;
-                                    loadFolderView();
-                                }
-                            });
-                            folderGrid.appendChild(folderCard);
-                        } else {
-                            folderCard.innerHTML = `
-                                <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
-                                <div class="folder-details">
-                                    <h3 class="folder-title">${folder.name}</h3>
-                                    <div class="folder-info">
-                                        ${subfolderCount > 0 ? `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | ` : ''}
-                                        Items ${itemCount > 0 ? itemCount : 0}
-                                    </div>
-                                </div>
-                                <div class="folder-actions">
-                                    <i class="material-icons more-options-button">more_vert</i>
-                                    <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
-                                        <div class="menu-item details-item">Details</div>
-                                        <div class="menu-item move-item">Move</div>
-                                        <div class="menu-item clone-item">Clone</div>
-                                        <div class="menu-item delete-item">Delete</div>
-                                    </div>
-                                </div>
-                            `;
-                            folderCard.addEventListener('click', (event) => {
-                                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
-                                    currentFolderId = folder.id;
-                                    loadFolderView();
-                                }
-                            });
-                            folderGrid.appendChild(folderCard);
-                        }
-                    })
-                    .catch(error => console.error('Error fetching folder images:', error));
+            folderCard.addEventListener('click', (event) => {
+                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                    currentFolderId = folder.id;
+                    loadFolderView();
+                }
             });
-        })
-        .catch(error => console.error('Error fetching folder data:', error));
+
+            folderGrid.appendChild(folderCard);
+        }
+    }
 }
 
 document.addEventListener('click', (event) => {

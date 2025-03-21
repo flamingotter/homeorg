@@ -46,7 +46,7 @@ class Folder(BaseModel):
     image_url: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ItemCreate(BaseModel):
     name: constr(min_length=1, max_length=255)
@@ -80,7 +80,7 @@ class Item(BaseModel):
     image_url: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ImageCreate(BaseModel):
     filename: constr(min_length=1, max_length=255)
@@ -99,4 +99,4 @@ class Image(BaseModel):
     folder_id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

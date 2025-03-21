@@ -130,3 +130,56 @@ def update_item(item_id: int, item: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_item)
     return db_item.__dict__
+
+@router.post("/items/{item_id}/clone") 
+def clone_item(item_id: int, db: Session = Depends(get_db)):
+    """Clone an item and its associated images."""
+    original_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not original_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # Create a new item with the same data
+    db_item = models.Item(
+        name=f"Clone of {original_item.name}",
+        folder_id=original_item.folder_id,
+        quantity=original_item.quantity,
+        unit=original_item.unit,
+        description=original_item.description,
+        notes=original_item.notes,
+        tags=original_item.tags,
+        acquired_date=original_item.acquired_date
+    )
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+
+    # Clone associated images
+    original_images = db.query(models.Image).filter(models.Image.item_id == original_item.id).all()
+    for image in original_images:
+        db_image = models.Image(
+            filename=image.filename,
+            item_id=db_item.id,
+            folder_id=image.folder_id
+        )
+        db.add(db_image)
+    db.commit()
+
+    return db_item
+
+@router.delete("/items/{item_id}")
+def delete_item(item_id: int, db: Session = Depends(get_db)):
+    """Delete an item and its associated images."""
+    item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # Delete associated images
+    images = db.query(models.Image).filter(models.Image.item_id == item_id).all()
+    for image in images:
+        db.delete(image)
+
+    # Delete the item
+    db.delete(item)
+    db.commit()
+
+    return {"ok": True}

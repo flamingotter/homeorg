@@ -161,10 +161,20 @@ def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_i
         description=original_folder.description,
         notes=original_folder.notes,
         tags=original_folder.tags,
-    ) #Removed image_url
+    )
     db.add(db_folder)
     db.commit()
     db.refresh(db_folder)
+
+    # Clone folder images
+    original_folder_images = db.query(models.Image).filter(models.Image.folder_id == original_folder.id).all()
+    for image in original_folder_images:
+        db_image = models.Image(
+            filename=image.filename,
+            folder_id=db_folder.id
+        )
+        db.add(db_image)
+    db.commit()
 
     original_items = db.query(models.Item).filter(models.Item.folder_id == original_folder.id).all()
     for item in original_items:
@@ -175,12 +185,21 @@ def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_i
             folder_id=db_folder.id,
             description=item.description,
             notes=item.notes,
-            tags=item.tags,
-            date_acquired=item.date_acquired
-        ) # Removed image_url
+            tags=item.tags
+        )
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
+
+        # Clone item images
+        original_item_images = db.query(models.Image).filter(models.Image.item_id == item.id).all()
+        for item_image in original_item_images:
+            db_item_image = models.Image(
+                filename=item_image.filename,
+                item_id=db_item.id
+            )
+            db.add(db_item_image)
+        db.commit()
 
     original_child_folders = db.query(models.Folder).filter(models.Folder.parent_id == original_folder.id).all()
     for child_folder in original_child_folders:

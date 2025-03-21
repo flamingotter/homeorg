@@ -44,7 +44,7 @@ class Item(Base):
     folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
     quantity = Column(Integer, nullable=True)
     unit = Column(String, nullable=True)
-    tag = Column(String, nullable=True)
+    tags = Column(String, nullable=True)
     acquired_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
     image_url = Column(String)

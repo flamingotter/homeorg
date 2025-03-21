@@ -230,7 +230,47 @@ document.addEventListener('click', (event) => {
 
         if (folderId) {
             // Handle folder menu items
-            // ... your existing folder menu handling ...
+            if (menuItem === 'Details') {
+                console.log(`Folder Details clicked for folder ID: ${folderId}`);
+                // Implement folder details display
+            } else if (menuItem === 'Move') {
+                console.log(`Folder Move clicked for folder ID: ${folderId}`);
+                // Implement folder move functionality
+            } else if (menuItem === 'Clone') {
+                console.log(`Folder Clone clicked for folder ID: ${folderId}`);
+                fetch(`/folders/${folderId}/clone`, { method: 'POST' })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Failed to clone folder.');
+                        }
+                    })
+                    .then(data => {
+                        console.log(`Folder ID: ${folderId} cloned. New folder ID: ${data.new_folder_id}`);
+                        loadFolderView(); // Reload the folder view to reflect the changes
+                    })
+                    .catch(error => {
+                        console.error('Error cloning folder:', error);
+                        alert('Failed to clone folder. Please try again.');
+                    });
+            } else if (menuItem === 'Delete') {
+                if (confirm(`Are you sure you want to delete folder ID: ${folderId} and all its contents?`)) {
+                    fetch(`/folders/${folderId}`, { method: 'DELETE' })
+                        .then(response => {
+                            if (response.ok) {
+                                console.log(`Folder ID: ${folderId} deleted successfully.`);
+                                loadFolderView();
+                            } else {
+                                throw new Error('Failed to delete folder.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error deleting folder:', error);
+                            alert('Failed to delete folder. Please try again.');
+                        });
+                }
+            }
         } else if (itemId) {
             // Handle item menu items
             if (menuItem === 'Details') {
@@ -242,12 +282,21 @@ document.addEventListener('click', (event) => {
             } else if (menuItem === 'Clone') {
                 console.log(`Item Clone clicked for item ID: ${itemId}`);
                 fetch(`/items/${itemId}/clone`, { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(`Item ID: ${itemId} cloned. New item ID: ${data.new_item_id}`);
-                        loadFolderView();
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Failed to clone item.');
+                        }
                     })
-                    .catch(error => console.error('Error cloning item:', error));
+                    .then(data => {
+                        console.log(`Item ID: ${itemId} cloned. New item ID: ${data.id}`);
+                        loadFolderView(); // Refresh the view
+                    })
+                    .catch(error => {
+                        console.error('Error cloning item:', error);
+                        alert('Failed to clone item. Please try again.');
+                    });
             } else if (menuItem === 'Delete') {
                 if (confirm(`Are you sure you want to delete item ID: ${itemId}?`)) {
                     fetch(`/items/${itemId}`, { method: 'DELETE' })
@@ -256,10 +305,13 @@ document.addEventListener('click', (event) => {
                                 console.log(`Item ID: ${itemId} deleted successfully.`);
                                 loadFolderView();
                             } else {
-                                console.error('Error deleting item:', response.status);
+                                throw new Error('Failed to delete item.');
                             }
                         })
-                        .catch(error => console.error('Error deleting item:', error));
+                        .catch(error => {
+                            console.error('Error deleting item:', error);
+                            alert('Failed to delete item. Please try again.');
+                        });
                 }
             }
         }

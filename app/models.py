@@ -25,7 +25,7 @@ class Folder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    parent_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True) # Added ondelete="CASCADE"
     description = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     tags = Column(String, nullable=True)
@@ -41,7 +41,7 @@ class Item(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     description = Column(String, nullable=True)
-    folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
+    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True) # Added ondelete="CASCADE"
     quantity = Column(Integer, nullable=True)
     unit = Column(String, nullable=True)
     tags = Column(String, nullable=True)

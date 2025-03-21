@@ -3,7 +3,7 @@ import logging
 from fastapi import Depends, HTTPException, APIRouter, UploadFile, File
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app import models
+from app import models, schemas
 from app.database import get_db
 import json
 from datetime import date, datetime
@@ -28,54 +28,26 @@ def get_root_item_quantity(db: Session = Depends(get_db)):
     quantity = db.query(func.sum(models.Item.quantity)).filter(models.Item.folder_id == None).scalar()
     return quantity if quantity is not None else 0
 
-@router.get("/items/")
+@router.get("/items/", response_model=list[schemas.Item])
 def read_root_items(db: Session = Depends(get_db)):
     items = db.query(models.Item).all()
-    item_list = []
-    for item in items:
-        images = db.query(models.Image).filter(models.Image.item_id == item.id).all()
-        item_data = item.__dict__
-        item_data["images"] = [{"id": image.id, "filename": image.filename, "item_id": image.item_id, "folder_id": image.folder_id} for image in images]
-        item_list.append(item_data)
-        logging.info(f"Item Data: {item_data}")
-    return item_list
+    return items
 
-@router.get("/items/{item_id}")
+@router.get("/items/{item_id}", response_model=schemas.Item)
 def read_item(item_id: int, db: Session = Depends(get_db)):
     db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
     if db_item is None:
         raise HTTPException(status_code=404, detail="Item not found")
-    item_dict = db_item.__dict__
-    item_dict['folder_id'] = db_item.folder_id
-    images = db.query(models.Image).filter(models.Image.item_id == item_id).all()
-    item_dict["images"] = [image.__dict__ for image in images]
-    return item_dict
+    return db_item
 
-@router.post("/items/")
-def create_item(item: dict, db: Session = Depends(get_db)):
-    acquired_date_str = item.get("acquired_date")
-    acquired_date_obj = None
-    if acquired_date_str:
-        try:
-            acquired_date_obj = datetime.strptime(acquired_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-
-    db_item = models.Item(
-        name=item["name"],
-        description=item.get("description"),
-        folder_id=item.get("folder_id"),
-        quantity=item.get("quantity"),
-        unit=item.get("unit"),
-        tag=item.get("tag"),
-        acquired_date=acquired_date_obj,
-        notes=item.get("notes")
-    ) # Removed image_url
+@router.post("/items/", response_model=schemas.Item)
+def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
+    """Create a new item."""
+    db_item = models.Item(**item.dict())
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
-
-    return db_item.__dict__
+    return db_item
 
 @router.post("/items/{item_id}/images/")
 async def upload_image(item_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -119,18 +91,19 @@ def get_folder_item_quantity(folder_id: int, db: Session = Depends(get_db)):
     quantity = db.query(func.sum(models.Item.quantity)).filter(models.Item.folder_id == folder_id).scalar()
     return quantity if quantity is not None else 0
 
-@router.patch("/items/{item_id}", response_model=None)
-def update_item(item_id: int, item: dict, db: Session = Depends(get_db)):
+@router.patch("/items/{item_id}", response_model=schemas.Item)
+def update_item(item_id: int, item: schemas.ItemUpdate, db: Session = Depends(get_db)):
+    """Update an existing item."""
     db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
     if db_item is None:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    for key, value in item.items():
+    for key, value in item.dict(exclude_unset=True).items():
         setattr(db_item, key, value)
 
     db.commit()
     db.refresh(db_item)
-    return db_item.__dict__
+    return db_item
 
 @router.post("/items/{item_id}/clone") 
 def clone_item(item_id: int, db: Session = Depends(get_db)):

@@ -42,36 +42,40 @@ function displayItems(items) {
             itemCard.className = 'item-card';
 
             let imageUrl = 'https://via.placeholder.com/80';
-            if (item.images && item.images.length > 0) {
-                imageUrl = `/static/images/${item.images[0].filename}`;
-            }
+            fetch(`/images/?item_id=${item.id}`)
+                .then(response => response.json())
+                .then(images => {
+                    if (images && images.length > 0) {
+                        imageUrl = `/static/images/${images[0].filename}`;
+                    }
+                    itemCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
+                        <div class="item-details">
+                            <h3 class="item-title">${item.name}</h3>
+                            <div class="item-info">
+                                ${item.quantity} ${item.unit}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <i class="material-icons more-options-button">more_vert</i>
+                            <div class="options-menu" data-item-id="${item.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px; right: 0; top: 100%; transform: translateY(5px);">
+                                <div class="menu-item details-item">Details</div>
+                                <div class="menu-item move-item">Move</div>
+                                <div class="menu-item clone-item">Clone</div>
+                                <div class="menu-item delete-item">Delete</div>
+                            </div>
+                        </div>
+                    `;
 
-            itemCard.innerHTML = `
-                <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
-                <div class="item-details">
-                    <h3 class="item-title">${item.name}</h3>
-                    <div class="item-info">
-                        ${item.quantity} ${item.unit}
-                    </div>
-                </div>
-                <div class="item-actions">
-                    <i class="material-icons more-options-button">more_vert</i>
-                    <div class="options-menu" data-item-id="${item.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px; right: 0; top: 100%; transform: translateY(5px);">
-                        <div class="menu-item details-item">Details</div>
-                        <div class="menu-item move-item">Move</div>
-                        <div class="menu-item clone-item">Clone</div>
-                        <div class="menu-item delete-item">Delete</div>
-                    </div>
-                </div>
-            `;
+                    itemCard.addEventListener('click', (event) => {
+                        if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                            displayItemDetails(item);
+                        }
+                    });
 
-            itemCard.addEventListener('click', (event) => {
-                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
-                    displayItemDetails(item);
-                }
-            });
-
-            itemGrid.appendChild(itemCard);
+                    itemGrid.appendChild(itemCard);
+                })
+                .catch(error => console.error('Error fetching item images:', error));
         }
     });
 }
@@ -93,31 +97,36 @@ function displayItemDetails(item) {
     const imageContainer = document.getElementById('item-details-image-container');
     imageContainer.innerHTML = ''; // Clear previous images
 
-    if (item.images && item.images.length > 0) {
-        item.images.forEach(image => {
-            const img = document.createElement('img');
-            img.src = `/static/images/${image.filename}`;
-            img.alt = item.name;
-            img.style.maxWidth = '100px'; // Adjust as needed
-            img.style.maxHeight = '100px'; // Adjust as needed
-            imageContainer.appendChild(img);
-        });
-    } else {
-        const img = document.createElement('img');
-        img.src = 'https://via.placeholder.com/80';
-        img.alt = 'Placeholder';
-        imageContainer.appendChild(img);
-    }
+    fetch(`/images/?item_id=${item.id}`)
+        .then(response => response.json())
+        .then(images => {
+            if (images && images.length > 0) {
+                images.forEach(image => {
+                    const img = document.createElement('img');
+                    img.src = `/static/images/${image.filename}`;
+                    img.alt = item.name;
+                    img.style.maxWidth = '100px'; // Adjust as needed
+                    img.style.maxHeight = '100px'; // Adjust as needed
+                    imageContainer.appendChild(img);
+                });
+            } else {
+                const img = document.createElement('img');
+                img.src = 'https://via.placeholder.com/80';
+                img.alt = 'Placeholder';
+                imageContainer.appendChild(img);
+            }
 
-    document.getElementById('item-details-quantity').textContent = `Quantity: ${item.quantity} ${item.unit}`;
-    document.getElementById('item-details-date').textContent = `Date Acquired: ${item.date_acquired || 'N/A'}`;
-    document.getElementById('item-details-tags').textContent = `Tags: ${item.tags || 'N/A'}`;
-    document.getElementById('item-details-notes').textContent = `Notes: ${item.notes || 'N/A'}`;
+            document.getElementById('item-details-quantity').textContent = `Quantity: ${item.quantity} ${item.unit}`;
+            document.getElementById('item-details-date').textContent = `Date Acquired: ${item.acquired_date || 'N/A'}`;
+            document.getElementById('item-details-tags').textContent = `Tags: ${item.tags || 'N/A'}`;
+            document.getElementById('item-details-notes').textContent = `Notes: ${item.notes || 'N/A'}`;
 
-    document.getElementById('items-grid').style.display = 'none';
-    document.getElementById('item-details-view').style.display = 'block';
-    document.getElementById('back-button').style.display = 'none';
-    document.querySelector('.counts').style.display = 'none';
+            document.getElementById('items-grid').style.display = 'none';
+            document.getElementById('item-details-view').style.display = 'block';
+            document.getElementById('back-button').style.display = 'none';
+            document.querySelector('.counts').style.display = 'none';
+        })
+        .catch(error => console.error('Error fetching item images:', error));
 }
 
 function displayFolders(folders) {
@@ -153,43 +162,67 @@ function displayFolders(folders) {
                 folderCard.className = 'folder-card';
 
                 let imageUrl = 'https://via.placeholder.com/80'; // Default placeholder
-                if (folder.images && folder.images.length > 0) {
-                    imageUrl = `/static/images/${folder.images[0].filename}`; // Use the first image if available
-                }
-
-                let folderInfoHTML = '';
-                if (subfolderCount > 0) {
-                    folderInfoHTML += `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | `;
-                }
-                folderInfoHTML += `Items ${itemCount > 0 ? itemCount : 0}`;
-
-                folderCard.innerHTML = `
-                    <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
-                    <div class="folder-details">
-                        <h3 class="folder-title">${folder.name}</h3>
-                        <div class="folder-info">
-                            ${folderInfoHTML}
-                        </div>
-                    </div>
-                    <div class="folder-actions">
-                        <i class="material-icons more-options-button">more_vert</i>
-                        <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
-                            <div class="menu-item details-item">Details</div>
-                            <div class="menu-item move-item">Move</div>
-                            <div class="menu-item clone-item">Clone</div>
-                            <div class="menu-item delete-item">Delete</div>
-                        </div>
-                    </div>
-                `;
-
-                folderCard.addEventListener('click', (event) => {
-                    if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
-                        currentFolderId = folder.id;
-                        loadFolderView();
-                    }
-                });
-
-                folderGrid.appendChild(folderCard);
+                fetch(`/images/?folder_id=${folder.id}`)
+                    .then(response => response.json())
+                    .then(images => {
+                        if (images && images.length > 0) {
+                            imageUrl = `/static/images/${images[0].filename}`; // Use the first image if available
+                            folderCard.innerHTML = `
+                                <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                                <div class="folder-details">
+                                    <h3 class="folder-title">${folder.name}</h3>
+                                    <div class="folder-info">
+                                        ${subfolderCount > 0 ? `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | ` : ''}
+                                        Items ${itemCount > 0 ? itemCount : 0}
+                                    </div>
+                                </div>
+                                <div class="folder-actions">
+                                    <i class="material-icons more-options-button">more_vert</i>
+                                    <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
+                                        <div class="menu-item details-item">Details</div>
+                                        <div class="menu-item move-item">Move</div>
+                                        <div class="menu-item clone-item">Clone</div>
+                                        <div class="menu-item delete-item">Delete</div>
+                                    </div>
+                                </div>
+                            `;
+                            folderCard.addEventListener('click', (event) => {
+                                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                                    currentFolderId = folder.id;
+                                    loadFolderView();
+                                }
+                            });
+                            folderGrid.appendChild(folderCard);
+                        } else {
+                            folderCard.innerHTML = `
+                                <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
+                                <div class="folder-details">
+                                    <h3 class="folder-title">${folder.name}</h3>
+                                    <div class="folder-info">
+                                        ${subfolderCount > 0 ? `<i class="material-icons folder-icon">folder</i> ${subfolderCount} | ` : ''}
+                                        Items ${itemCount > 0 ? itemCount : 0}
+                                    </div>
+                                </div>
+                                <div class="folder-actions">
+                                    <i class="material-icons more-options-button">more_vert</i>
+                                    <div class="options-menu" data-folder-id="${folder.id}" style="display: none; position: absolute; background-color: #555; border: 1px solid #777; border-radius: 5px; padding: 5px;">
+                                        <div class="menu-item details-item">Details</div>
+                                        <div class="menu-item move-item">Move</div>
+                                        <div class="menu-item clone-item">Clone</div>
+                                        <div class="menu-item delete-item">Delete</div>
+                                    </div>
+                                </div>
+                            `;
+                            folderCard.addEventListener('click', (event) => {
+                                if (!event.target.classList.contains('more-options-button') && !event.target.classList.contains('menu-item')) {
+                                    currentFolderId = folder.id;
+                                    loadFolderView();
+                                }
+                            });
+                            folderGrid.appendChild(folderCard);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching folder images:', error));
             });
         })
         .catch(error => console.error('Error fetching folder data:', error));
@@ -328,13 +361,14 @@ function loadRootView() {
         fetch('/folders/').then(response => response.json()),
         fetch('/items/').then(response => response.json())
     ])
-        .then(([folderData, items]) => {
-            displayFolders(folderData.folders);
+        .then(([folders, items]) => { // Corrected: folders is now the direct response
+            displayFolders(folders); // Pass folders directly
             displayItems(items);
-            updateCounts(folderData.total_quantity); // Pass the total quantity
 
-            // Update the total quantity display
-            document.getElementById('total-quantity').textContent = folderData.total_quantity;
+            // Calculate total quantity from items, as the root folder no longer supplies this value.
+            let totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            updateCounts(totalQuantity);
+            document.getElementById('total-quantity').textContent = totalQuantity;
         })
         .catch(error => console.error('Error loading root view:', error));
 }

@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import Depends, HTTPException, APIRouter # type: ignore
 from sqlalchemy import func # type: ignore
 from sqlalchemy.orm import Session # type: ignore
-from app import models
+from app import models, schemas
 from app.database import get_db
 import logging
 
@@ -41,17 +41,15 @@ def calculate_folder_quantity(db: Session, folder_id: Optional[int]) -> int:
 
     return total_quantity
 
-@router.post("/folders/", response_model=None)
-def create_folder(folder: dict, db: Session = Depends(get_db)):
-    existing_folder = db.query(models.Folder).filter(models.Folder.name == folder["name"], models.Folder.parent_id == folder.get("parent_id")).first()
-    if existing_folder:
-        raise HTTPException(status_code=400, detail="Folder already exists")
-
-    db_folder = models.Folder(name=folder["name"], parent_id=folder.get("parent_id"), description=folder.get("description"), notes=folder.get("notes"), tags=folder.get("tags")) # Remove image_url here
+@router.post("/folders/", response_model=schemas.Folder)
+def create_folder(folder: schemas.FolderCreate, db: Session = Depends(get_db)):
+    """Create a new folder."""
+    db_folder = models.Folder(**folder.dict())
     db.add(db_folder)
     db.commit()
     db.refresh(db_folder)
-    return db_folder.__dict__
+    return db_folder
+
 
 @router.get("/folders/count")
 def get_root_folder_count(db: Session = Depends(get_db)):
@@ -71,17 +69,10 @@ def get_parent_folder(folder_id: int, db: Session = Depends(get_db)):
     parent_folder = get_folder_by_id(db, folder.parent_id)
     return parent_folder.__dict__
 
-@router.get("/folders/")
-def read_root_folders(db: Session = Depends(get_db)):
-    folders = db.query(models.Folder).filter(models.Folder.parent_id == None).all()
-    total_quantity = calculate_folder_quantity(db, None)
-    folder_list = []
-    for folder in folders:
-        folder_data = folder.__dict__
-        images = db.query(models.Image).filter(models.Image.folder_id == folder.id).all()
-        folder_data["images"] = [image.__dict__ for image in images]
-        folder_list.append(folder_data)
-    return {"folders": folder_list, "total_quantity": total_quantity}
+@router.get("/folders/", response_model=list[schemas.Folder])
+def read_folders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Read all folders."""
+    return db.query(models.Folder).offset(skip).limit(limit).all()
 
 @router.get("/folders/{folder_id}/folders")
 def read_sub_folders(folder_id: int, db: Session = Depends(get_db)):
@@ -105,27 +96,31 @@ def read_folder_items(folder_id: int, db: Session = Depends(get_db)):
         item_list.append(item_data)
     return item_list
 
-@router.patch("/folders/{folder_id}", response_model=None)
-def update_folder(folder_id: int, folder: dict, db: Session = Depends(get_db)):
-    db_folder = get_folder_by_id(db, folder_id)
-    for key, value in folder.items():
+@router.patch("/folders/{folder_id}", response_model=schemas.Folder)
+def update_folder(folder_id: int, folder: schemas.FolderUpdate, db: Session = Depends(get_db)):
+    """Update an existing folder."""
+    db_folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if not db_folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    for key, value in folder.dict(exclude_unset=True).items():
         setattr(db_folder, key, value)
     db.commit()
     db.refresh(db_folder)
-    return db_folder.__dict__
+    return db_folder
 
 @router.get("/folders/{folder_id}/quantity")
 def get_folder_quantity(folder_id: int, db: Session = Depends(get_db)):
     total_quantity = calculate_folder_quantity(db, folder_id)
     return {"quantity": total_quantity}
 
-@router.get("/folders/{folder_id}")
+@router.get("/folders/{folder_id}", response_model=schemas.Folder)
 def read_folder(folder_id: int, db: Session = Depends(get_db)):
-    folder = get_folder_by_id(db, folder_id)
-    folder_data = folder.__dict__
-    images = db.query(models.Image).filter(models.Image.folder_id == folder_id).all()
-    folder_data["images"] = [image.__dict__ for image in images]
-    return folder_data
+    """Read a folder by ID."""
+    db_folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if not db_folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return db_folder
+
 
 @router.delete("/folders/{folder_id}")
 def delete_folder(folder_id: int, db: Session = Depends(get_db)):

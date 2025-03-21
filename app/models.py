@@ -57,8 +57,8 @@ class Image(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String)
-    item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=True) # Added ondelete="CASCADE"
+    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True) # Added ondelete="CASCADE"
 
     item = relationship("Item", back_populates="images")
     folder = relationship("Folder", back_populates="images")

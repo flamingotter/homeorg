@@ -7,6 +7,7 @@ from app import models
 from app.database import get_db
 import json
 from datetime import date, datetime
+from typing import Optional
 
 router = APIRouter()
 logging.basicConfig(level=logging.INFO)

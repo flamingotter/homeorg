@@ -1,6 +1,6 @@
 # app/database.py
 import os
-from sqlalchemy import create_engine # type: ignore
+from sqlalchemy import create_engine, text # type: ignore
 from sqlalchemy.ext.declarative import declarative_base # type: ignore
 from sqlalchemy.orm import sessionmaker # type: ignore
 
@@ -18,6 +18,7 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
+        db.execute(text("PRAGMA foreign_keys = ON"))  # Enable foreign keys
         yield db
     finally:
         db.close()

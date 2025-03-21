@@ -340,6 +340,11 @@ function loadRootView() {
 }
 
 function loadFolderView() {
+    if (currentFolderId === null) {
+        // If currentFolderId is null, load the root view instead
+        loadRootView();
+        return;
+    }
     document.getElementById('back-button').style.display = 'block';
     document.getElementById('home-button').style.display = 'block'; // Show home button when in a folder
 

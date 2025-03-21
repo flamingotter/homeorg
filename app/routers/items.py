@@ -181,3 +181,15 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Item deleted successfully"}
+
+@router.put("/items/{item_id}/move")
+def move_item(item_id: int, destination_folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Move an item to a new folder or the root level."""
+    item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    item.folder_id = destination_folder_id  # Update folder_id
+    db.commit()
+
+    return {"message": "Item moved successfully"}

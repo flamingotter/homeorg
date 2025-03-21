@@ -215,3 +215,30 @@ def clone_folder(folder_id: int, db: Session = Depends(get_db)):
     original_folder = get_folder_by_id(db, folder_id)
     new_folder = clone_folder_recursive(db, original_folder, parent_id=original_folder.parent_id)
     return {"new_folder_id": new_folder.id}
+
+@router.put("/folders/{folder_id}/move")
+def move_folder(folder_id: int, destination_folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Move a folder and its contents (including child folders, items, and images) to a new parent folder or the root level."""
+    folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    def recursive_move(folder_to_move: models.Folder, new_parent_id: Optional[int]):
+        """Recursively move a folder and its contents."""
+        folder_to_move.parent_id = new_parent_id
+        db.commit()
+
+        # Update items in the folder
+        items = db.query(models.Item).filter(models.Item.folder_id == folder_to_move.id).all()
+        for item in items:
+            item.folder_id = folder_to_move.id
+            db.commit()
+
+        # Recursively move child folders
+        child_folders = db.query(models.Folder).filter(models.Folder.parent_id == folder_to_move.id).all()
+        for child_folder in child_folders:
+            recursive_move(child_folder, folder_to_move.id)
+
+    recursive_move(folder, destination_folder_id)
+
+    return {"message": "Folder and its contents moved successfully"}

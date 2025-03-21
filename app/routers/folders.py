@@ -127,32 +127,34 @@ def read_folder(folder_id: int, db: Session = Depends(get_db)):
     folder_data["images"] = [image.__dict__ for image in images]
     return folder_data
 
-@router.delete("/folders/{folder_id}", status_code=204)
+@router.delete("/folders/{folder_id}")
 def delete_folder(folder_id: int, db: Session = Depends(get_db)):
-    """Delete a folder by its ID."""
-    folder = get_folder_by_id(db, folder_id)
+    """Delete a folder and its contents, including images."""
+    folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
 
-    # Recursively find and delete all child folders and their items
-    def delete_recursive(db: Session, current_folder_id: int):
-        child_folders = db.query(models.Folder).filter(models.Folder.parent_id == current_folder_id).all()
-        for child_folder in child_folders:
-            delete_recursive(db, child_folder.id)
-            # Delete items within the child folder
-            db.query(models.Item).filter(models.Item.folder_id == child_folder.id).delete(synchronize_session=False)
-            db.delete(child_folder)
+    # Delete associated item images
+    items = db.query(models.Item).filter(models.Item.folder_id == folder_id).all()
+    for item in items:
+        db.query(models.Image).filter(models.Image.item_id == item.id).delete()
 
-        # Delete items directly within the current folder
-        db.query(models.Item).filter(models.Item.folder_id == current_folder_id).delete(synchronize_session=False)
-        db.delete(folder) # Delete the current folder after its children
+    # Delete associated folder images
+    db.query(models.Image).filter(models.Image.folder_id == folder_id).delete()
 
-    delete_recursive(db, folder_id)
+    # Delete items in the folder
+    db.query(models.Item).filter(models.Item.folder_id == folder_id).delete()
 
-    # If the folder has no children, we can delete it directly
-    # db.query(models.Item).filter(models.Item.folder_id == folder_id).delete(synchronize_session=False)
-    # db.delete(folder)
+    # Recursively delete child folders
+    child_folders = db.query(models.Folder).filter(models.Folder.parent_id == folder_id).all()
+    for child_folder in child_folders:
+        delete_folder(child_folder.id, db)  # Recursive call
 
+    # Delete the folder itself
+    db.delete(folder)
     db.commit()
-    return None
+
+    return {"message": "Folder deleted successfully"}
 
 def clone_folder_recursive(db: Session, original_folder: models.Folder, parent_id: Optional[int] = None) -> models.Folder:
     db_folder = models.Folder(

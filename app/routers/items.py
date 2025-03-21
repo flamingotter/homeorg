@@ -174,12 +174,10 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
 
     # Delete associated images
-    images = db.query(models.Image).filter(models.Image.item_id == item_id).all()
-    for image in images:
-        db.delete(image)
+    db.query(models.Image).filter(models.Image.item_id == item_id).delete()
 
     # Delete the item
     db.delete(item)
     db.commit()
 
-    return {"ok": True}
+    return {"message": "Item deleted successfully"}

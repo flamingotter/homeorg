@@ -41,5 +41,7 @@ here is a list of desired features:
 ## Potential Future Features:
 * User Authentication: Add user authentication to restrict access and manage permissions.
 * Data Export and Import: Enable exporting and importing data in various formats (e.g., CSV, JSON).
+* Label generation with QR code
+* Specific Book category with ISBN lookup and detail autofill
 * Advanced UI/UX: Improve the user interface with more advanced features and styling.
 * Cloud Integration: Integrate with cloud storage services for data backup and synchronization. 

@@ -1,17 +1,20 @@
-Homeorg is inteded to be a web based home organization and management application. The backend framework is FastAPI and SQLite. 
+HomeOrg is inteded to be a web based home organization and management application. The backend framework is FastAPI and SQLite. 
 here is a list of desired features:
 
 ## Core Functionality:
 
 ### Inventory Management:
-* Add items with details like name, description, quantity, unit, and tags.
+* Add items with details like name, description, quantity, unit, notes and tags.
+* Organize items and folder into folders and sub-folders.
 * Editing and Deleting: Implement functionality to edit and delete existing items and folders.
-* Organize items into folders and sub-folders.
+* Moving: Functionality to move items to different folders
+* Cloning: Ability to clone an item with all of it's attributes. 
 * View and manage items and folders in a hierarchical structure.
 * Search and Filtering: Enhance search capabilities to find specific items or folders based on various criteria.
 
 ### Folder Management:
 * Create new folders and sub-folders.
+* Clone a folder with all attributes including it's sub-folders and items within.
 * Navigate into folders to view their contents.
 * Navigate back to parent folders or the root level.
 

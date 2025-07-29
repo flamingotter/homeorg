@@ -60,7 +60,7 @@ header {
 }
 
 #home-button i.material-icons {
-    font-size: 24px; 
+    font-size: 24px;
 }
 
 /* Counts Styles */
@@ -111,7 +111,7 @@ header {
 }
 
 .thumbnail {
-    width: 80px; 
+    width: 80px;
     height: 80px;
     margin-right: 10px;
     object-fit: cover;
@@ -177,23 +177,58 @@ header {
     background-color: #007bff;
     color: white;
     border: none;
-    /* font-size: 1.5em; */
+    font-size: 1.5em; /* Adjusted for better visibility */
+    display: flex; /* Use flex to center the icon */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 100; /* Ensure it's above other content */
 }
 
 /* Item Details View Styles */
 #item-details-view {
     padding: 10px;
+    display: none; /* Hidden by default */
 }
 
-#item-details-image {
-    max-width: 100%;
-    height: auto;
+#item-details-view header {
+    background-color: #444;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 10px;
 }
 
-#item-details-content div {
-    margin-bottom: 5px;
+#item-details-view .header-icons i {
+    margin-left: 10px;
 }
+
+#item-details-image-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center; /* Center images */
+}
+
+#item-details-image-container img {
+    max-width: 150px; /* Adjust size as needed */
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.detail-row {
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+
+.detail-row strong {
+    color: #a0aec0; /* A lighter gray for labels */
+}
+
 
 /* Media Query for Desktop Styles */
 @media (min-width: 768px) {
@@ -229,4 +264,134 @@ header {
 
 .more-options-button {
     cursor: pointer;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 200; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
+    padding-top: 60px; /* Location of the box */
+}
+
+.modal-content {
+    background-color: #444;
+    margin: 5% auto; /* 5% from the top and centered */
+    padding: 20px;
+    border: 1px solid #777;
+    border-radius: 10px;
+    width: 90%; /* Could be more responsive */
+    max-width: 500px; /* Max width for larger screens */
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal h2 {
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal label {
+    color: #ccc;
+    margin-bottom: 5px;
+    font-weight: normal; /* Override default label bold */
+}
+
+.modal input[type="text"],
+.modal input[type="number"],
+.modal input[type="date"],
+.modal textarea,
+.modal select {
+    background-color: #333;
+    border: 1px solid #666;
+    color: #eee;
+    padding: 10px;
+    border-radius: 5px;
+    width: calc(100% - 22px); /* Account for padding and border */
+    margin-bottom: 15px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.modal input[type="text"]:focus,
+.modal input[type="number"]:focus,
+.modal input[type="date"]:focus,
+.modal textarea:focus,
+.modal select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.modal .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease;
+}
+
+.modal .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Tab Button Styles */
+.tab-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #555;
+}
+
+.tab-button {
+    background-color: #555;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px 5px 0 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tab-button.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.tab-button:hover:not(.active) {
+    background-color: #666;
+}
+
+/* Form specific adjustments */
+.tab-content {
+    padding-top: 15px;
 }

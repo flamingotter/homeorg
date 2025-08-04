@@ -108,8 +108,14 @@
                 <label for="modalFolderTags">Tags (comma-separated):</label>
                 <input type="text" id="modalFolderTags">
 
-                <label for="modalFolderImageFile">Folder Image:</label>
-                <input type="file" id="modalFolderImageFile" accept="image/*">
+                <label>Folder Image:</label>
+                <div class="image-upload-controls">
+                    <button type="button" id="takeFolderPhotoButton" class="btn-secondary">Take Photo</button>
+                    <button type="button" id="chooseFolderFileButton" class="btn-secondary">Choose File</button>
+                    <input type="file" id="modalFolderImageFile" accept="image/*" style="display: none;">
+                    <input type="file" id="modalFolderCameraFile" accept="image/*" capture="camera" style="display: none;">
+                    <span id="selectedFolderImageName" class="file-name-display">No file chosen</span>
+                </div>
 
                 <label for="modalFolderParentId">Parent Folder ID (optional):</label>
                 <input type="number" id="modalFolderParentId">
@@ -140,8 +146,14 @@
                 <label for="modalItemNotes">Notes:</label>
                 <textarea id="modalItemNotes"></textarea>
 
-                <label for="modalItemImageFile">Item Image:</label>
-                <input type="file" id="modalItemImageFile" accept="image/*">
+                <label>Item Image:</label>
+                <div class="image-upload-controls">
+                    <button type="button" id="takeItemPhotoButton" class="btn-secondary">Take Photo</button>
+                    <button type="button" id="chooseItemFileButton" class="btn-secondary">Choose File</button>
+                    <input type="file" id="modalItemImageFile" accept="image/*" style="display: none;">
+                    <input type="file" id="modalItemCameraFile" accept="image/*" capture="camera" style="display: none;">
+                    <span id="selectedItemImageName" class="file-name-display">No file chosen</span>
+                </div>
 
                 <label for="modalItemFolderId">Folder ID (optional):</label>
                 <input type="number" id="modalItemFolderId">

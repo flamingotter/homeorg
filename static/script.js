@@ -18,8 +18,15 @@ const modalFolderName = document.getElementById('modalFolderName');
 const modalFolderDescription = document.getElementById('modalFolderDescription');
 const modalFolderNotes = document.getElementById('modalFolderNotes');
 const modalFolderTags = document.getElementById('modalFolderTags');
-const modalFolderImageUrl = document.getElementById('modalFolderImageUrl'); // This will be replaced by file input for folders
 const modalFolderParentId = document.getElementById('modalFolderParentId');
+
+// NEW: Folder Image Upload Elements
+const takeFolderPhotoButton = document.getElementById('takeFolderPhotoButton');
+const chooseFolderFileButton = document.getElementById('chooseFolderFileButton');
+const modalFolderImageFile = document.getElementById('modalFolderImageFile'); // For choosing existing files
+const modalFolderCameraFile = document.getElementById('modalFolderCameraFile'); // For taking new photos
+const selectedFolderImageName = document.getElementById('selectedFolderImageName');
+let selectedFolderImage = null; // To store the actual File object for folder
 
 // Get form elements for Item
 const addItemForm = document.getElementById('add-item-form');
@@ -30,9 +37,15 @@ const modalItemUnit = document.getElementById('modalItemUnit');
 const modalItemTags = document.getElementById('modalItemTags');
 const modalItemAcquiredDate = document.getElementById('modalItemAcquiredDate');
 const modalItemNotes = document.getElementById('modalItemNotes');
-const modalItemImageUrl = document.getElementById('modalItemImageUrl'); // This will be replaced by file input for items
 const modalItemFolderId = document.getElementById('modalItemFolderId');
-const modalItemImageFile = document.getElementById('modalItemImageFile'); // NEW: File input for item image
+
+// NEW: Item Image Upload Elements
+const takeItemPhotoButton = document.getElementById('takeItemPhotoButton');
+const chooseItemFileButton = document.getElementById('chooseItemFileButton');
+const modalItemImageFile = document.getElementById('modalItemImageFile'); // For choosing existing files
+const modalItemCameraFile = document.getElementById('modalItemCameraFile'); // For taking new photos
+const selectedItemImageName = document.getElementById('selectedItemImageName');
+let selectedItemImage = null; // To store the actual File object for item
 
 
 // Custom Message Box and Confirmation Dialog
@@ -567,10 +580,16 @@ fab.addEventListener('click', () => {
     // Reset forms and show default tab (Add Folder)
     addFolderForm.reset();
     addItemForm.reset();
-    // Clear any previously selected file
-    if (modalItemImageFile) {
-        modalItemImageFile.value = '';
-    }
+    // Clear any previously selected file inputs and their displayed names
+    selectedFolderImage = null;
+    selectedItemImage = null;
+    selectedFolderImageName.textContent = 'No file chosen';
+    selectedItemImageName.textContent = 'No file chosen';
+    modalFolderImageFile.value = '';
+    modalFolderCameraFile.value = '';
+    modalItemImageFile.value = '';
+    modalItemCameraFile.value = '';
+
     // Pre-fill parent/folder ID if currently in a folder
     modalFolderParentId.value = currentFolderId || '';
     modalItemFolderId.value = currentFolderId || '';
@@ -629,6 +648,60 @@ async function populateUnitDropdown() {
     });
 }
 
+// NEW: Event listeners for Folder image buttons
+takeFolderPhotoButton.addEventListener('click', () => {
+    modalFolderCameraFile.click(); // Trigger click on hidden camera input
+});
+
+chooseFolderFileButton.addEventListener('click', () => {
+    modalFolderImageFile.click(); // Trigger click on hidden file input
+});
+
+// NEW: Event listeners for Folder image input changes
+modalFolderImageFile.addEventListener('change', (event) => {
+    selectedFolderImage = event.target.files[0];
+    console.log('Folder Image File Selected (Choose File):', selectedFolderImage); // DEBUG
+    selectedFolderImageName.textContent = selectedFolderImage ? selectedFolderImage.name : 'No file chosen';
+    // Clear other input if this one is used
+    modalFolderCameraFile.value = '';
+});
+
+modalFolderCameraFile.addEventListener('change', (event) => {
+    selectedFolderImage = event.target.files[0];
+    console.log('Folder Image File Selected (Take Photo):', selectedFolderImage); // DEBUG
+    selectedFolderImageName.textContent = selectedFolderImage ? selectedFolderImage.name : 'No file chosen';
+    // Clear other input if this one is used
+    modalFolderImageFile.value = '';
+});
+
+
+// NEW: Event listeners for Item image buttons
+takeItemPhotoButton.addEventListener('click', () => {
+    modalItemCameraFile.click(); // Trigger click on hidden camera input
+});
+
+chooseItemFileButton.addEventListener('click', () => {
+    modalItemImageFile.click(); // Trigger click on hidden file input
+});
+
+// NEW: Event listeners for Item image input changes
+modalItemImageFile.addEventListener('change', (event) => {
+    selectedItemImage = event.target.files[0];
+    console.log('Item Image File Selected (Choose File):', selectedItemImage); // DEBUG
+    selectedItemImageName.textContent = selectedItemImage ? selectedItemImage.name : 'No file chosen';
+    // Clear other input if this one is used
+    modalItemCameraFile.value = '';
+});
+
+modalItemCameraFile.addEventListener('change', (event) => {
+    selectedItemImage = event.target.files[0];
+    console.log('Item Image File Selected (Take Photo):', selectedItemImage); // DEBUG
+    selectedItemImageName.textContent = selectedItemImage ? selectedItemImage.name : 'No file chosen';
+    // Clear other input if this one is used
+    modalItemImageFile.value = '';
+});
+
+
 // Handle Add Folder Form Submission
 addFolderForm.addEventListener('submit', async (event) => {
     event.preventDefault(); // Prevent default form submission
@@ -638,31 +711,55 @@ addFolderForm.addEventListener('submit', async (event) => {
         description: modalFolderDescription.value || null,
         notes: modalFolderNotes.value || null,
         tags: modalFolderTags.value || null,
-        // image_url: modalFolderImageUrl.value || null, // Removed as we'll handle file upload separately
         parent_id: modalFolderParentId.value ? parseInt(modalFolderParentId.value) : null
     };
 
+    let newFolderId = null;
+
     try {
-        const response = await fetch('/folders/', {
+        // 1. Create the Folder record first
+        const folderResponse = await fetch('/folders/', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(folderData),
+            body: JSON.stringify(folderData)
         });
-        const data = await response.json();
-        if (response.ok) {
-            showMessage(`Folder "${data.name}" created successfully! ID: ${data.id}`);
-            addEditModal.style.display = 'none'; // Close modal
-            loadFolderView(); // Refresh current view
-        } else {
-            showMessage(`Error creating folder: ${data.detail || response.statusText}`, true);
+
+        if (!folderResponse.ok) {
+            const errorData = await folderResponse.json();
+            throw new Error(errorData.detail);
         }
+
+        const newFolder = await folderResponse.json();
+        newFolderId = newFolder.id;
+
+        // 2. Upload image if selected
+        if (selectedFolderImage) {
+            const formData = new FormData();
+            formData.append('file', selectedFolderImage);
+            // This URL was incorrect and has been fixed from '/static/images/upload/'
+            const imageResponse = await fetch(`/images/upload/?folder_id=${newFolderId}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!imageResponse.ok) {
+                const errorData = await imageResponse.json();
+                // The server responded with a non-2xx status code.
+                throw new Error(`Server responded with status ${imageResponse.status}: ${errorData.detail}`);
+            }
+        }
+
+        showMessage('Folder added successfully!');
+        addEditModal.style.display = 'none';
+        loadFolderView();
     } catch (error) {
-        console.error('Error creating folder:', error);
-        showMessage('Failed to create folder.', true);
+        console.error('Error adding folder:', error);
+        showMessage(`Failed to add folder: ${error.message}`, true);
     }
 });
+
 
 // Handle Add Item Form Submission
 addItemForm.addEventListener('submit', async (event) => {
@@ -671,12 +768,11 @@ addItemForm.addEventListener('submit', async (event) => {
     const itemData = {
         name: modalItemName.value,
         description: modalItemDescription.value || null,
-        quantity: modalItemQuantity.value ? parseFloat(modalItemQuantity.value) : 0.0, // Ensure float
+        quantity: parseInt(modalItemQuantity.value) || 0,
         unit: modalItemUnit.value || null,
         tags: modalItemTags.value || null,
         acquired_date: modalItemAcquiredDate.value || null,
         notes: modalItemNotes.value || null,
-        // image_url: modalItemImageUrl.value || null, // Removed as we'll handle file upload separately
         folder_id: modalItemFolderId.value ? parseInt(modalItemFolderId.value) : null
     };
 
@@ -687,51 +783,46 @@ addItemForm.addEventListener('submit', async (event) => {
         const itemResponse = await fetch('/items/', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(itemData),
+            body: JSON.stringify(itemData)
         });
-        const itemDataResponse = await itemResponse.json();
 
         if (!itemResponse.ok) {
-            throw new Error(`Error creating item: ${itemDataResponse.detail || itemResponse.statusText}`);
+            const errorData = await itemResponse.json();
+            throw new Error(`Server responded with status ${itemResponse.status}: ${errorData.detail}`);
         }
-        newItemId = itemDataResponse.id;
-        showMessage(`Item "${itemDataResponse.name}" created successfully! ID: ${newItemId}`);
 
-        // 2. If an image file is selected, upload it
-        const imageFile = modalItemImageFile.files[0];
-        if (imageFile) {
+        const newItem = await itemResponse.json();
+        newItemId = newItem.id;
+
+        // 2. Upload image if selected
+        if (selectedItemImage) {
             const formData = new FormData();
-            formData.append('file', imageFile);
-
-            const imageUploadResponse = await fetch(`/items/${newItemId}/images/`, {
+            formData.append('file', selectedItemImage);
+            // This URL was incorrect and has been fixed from '/static/images/upload/'
+            const imageResponse = await fetch(`/images/upload/?item_id=${newItemId}`, {
                 method: 'POST',
-                body: formData, // No 'Content-Type' header needed for FormData; browser sets it
+                body: formData
             });
-            const imageUploadData = await imageUploadResponse.json();
-
-            if (imageUploadResponse.ok) {
-                showMessage(`Image "${imageUploadData.filename}" uploaded for item ID ${newItemId}!`);
-            } else {
-                // Log error but don't stop the process, as item was already created
-                console.error(`Error uploading image: ${imageUploadData.detail || imageUploadResponse.statusText}`);
-                showMessage(`Warning: Failed to upload image for item. ${imageUploadData.detail || imageUploadResponse.statusText}`, true);
+            if (!imageResponse.ok) {
+                const errorData = await imageResponse.json();
+                // The server responded with a non-2xx status code.
+                throw new Error(`Server responded with status ${imageResponse.status}: ${errorData.detail}`);
             }
         }
 
-        addEditModal.style.display = 'none'; // Close modal
-        loadFolderView(); // Refresh current view
+        showMessage('Item added successfully!');
+        addEditModal.style.display = 'none';
+        loadFolderView();
     } catch (error) {
-        console.error('Error in item creation/image upload process:', error);
-        showMessage(`Failed to create item or upload image: ${error.message}`, true);
-        // If item creation failed, newItemId will be null.
-        // If image upload failed, the item was still created, so just show warning.
+        console.error('Error adding item:', error);
+        showMessage(`Failed to add item: ${error.message}`, true);
     }
 });
 
-
-// Initial data load on page load
-window.onload = () => {
-    loadRootView(); // Load root view on page load
-};
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    // Only call loadRootView once when the page loads
+    loadRootView();
+});

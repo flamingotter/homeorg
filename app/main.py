@@ -3,10 +3,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.staticfiles import StaticFiles
-
-# Explicitly import app.models to ensure all SQLAlchemy models are loaded and registered
-# with Base.metadata at application startup, preventing "Table already defined" errors.
-import app.models
+import os # Import os for path manipulation
 
 from app.db.session import create_database_and_tables
 
@@ -29,22 +26,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Mount a separate StaticFiles instance specifically for images.
-# This will serve files from the "static/images" directory on the host
-# when requests come to the "/static_images" URL path in the browser.
-# This must be mounted *before* the API router to avoid conflicts with API routes.
-app.mount("/static_images", StaticFiles(directory="static/images"), name="static_images")
-
-# Include all individual routers directly, applying their prefixes here.
-# The routers themselves (in app/api/endpoints/*.py) should NOT have prefixes defined.
+# IMPORTANT: Include all individual API routers first.
+# This ensures that API requests are handled by the routers before any static file mounts.
 app.include_router(folder.router, prefix="/folders")
 app.include_router(item.router, prefix="/items")
 app.include_router(image.router, prefix="/images")
 app.include_router(counts.router, prefix="/counts")
 
+# Mount static files *after* all API routers.
+# This ensures that API routes take precedence over static file serving for conflicting paths.
+
+# Mount a separate StaticFiles instance specifically for images.
+# This will serve files from the "static/images" directory on the host
+# when requests come to the "/static_images" URL path in the browser.
+app.mount("/static_images", StaticFiles(directory="static/images"), name="static_images")
+
 # Mount static files for the main frontend (index.html, styles.css, script.js)
 # This will serve files directly from the "static" directory at the root "/".
 # Requests to "/" will look for "index.html" inside "static".
-# This must be mounted *after* the API routers to ensure API calls are handled first.
 app.mount("/", StaticFiles(directory="static", html=True), name="static_root")
-

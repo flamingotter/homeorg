@@ -1,86 +1,92 @@
 # app/api/endpoints/item.py
-# FastAPI router for Item operations.
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from sqlalchemy.orm import Session
 
-# Import specific crud functions and schemas directly
-from app.crud.item import ( # Direct import of functions
-    create_item, get_item, get_items, update_item, delete_item, clone_item, move_item
-)
-from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse
 from app.db.session import get_db
+from app.crud import item as crud_item
+from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 
-# REMOVED: from app.models import Item, Folder, Image # No longer needed here
+# Import image crud and router to handle image association
+from app.crud import image as crud_image
+from app.schemas.image import ImageResponse
 
-router = APIRouter(
-    tags=["Items"],
-)
+from app.api.endpoints import image as image_router
+from app.api.endpoints import counts as counts_router
 
-@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED, summary="Create a new item")
-def create_new_item(item: ItemCreate, db: Session = Depends(get_db)):
+router = APIRouter()
+
+# New endpoint to get all items
+@router.get("/", response_model=List[ItemResponse])
+def read_all_items(db: Session = Depends(get_db)):
     """
-    Create a new inventory item with the provided details.
+    Retrieve all items from the database.
+    
+    This endpoint uses the get_items function from the crud layer,
+    which retrieves all items by default with a limit of 100.
     """
-    db_item = create_item(db=db, item=item) # Direct call to CRUD function
-    return db_item
+    # Use the existing get_items function from the crud module
+    return crud_item.get_items(db)
 
-@router.get("/{item_id}", response_model=ItemResponse, summary="Get an item by ID")
+@router.get("/{item_id}", response_model=ItemResponse)
 def read_item(item_id: int, db: Session = Depends(get_db)):
     """
-    Retrieve a single item by its unique ID.
+    Retrieve a specific item by its ID.
     """
-    db_item = get_item(db=db, item_id=item_id) # Direct call to CRUD function
+    db_item = crud_item.get_item(db, item_id)
     if db_item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+        raise HTTPException(status_code=404, detail="Item not found")
     return db_item
 
-@router.get("/", response_model=List[ItemResponse], summary="Get all items or filter by folder")
-def read_items(skip: int = 0, limit: int = 100, folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+@router.post("/{item_id}/add_image", response_model=ImageResponse)
+def add_image_to_item(
+    item_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """
-    Retrieve a list of all items, with optional pagination and filtering by folder ID.
+    Adds an image to a specific item.
     """
-    items = get_items(db=db, skip=skip, limit=limit, folder_id=folder_id) # Direct call to CRUD function
-    return items
-
-@router.put("/{item_id}", response_model=ItemResponse, summary="Update an item by ID")
-def update_existing_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
-    """
-    Update an existing item's details by its ID.
-    """
-    db_item = update_item(db=db, item_id=item_id, item=item) # Direct call to CRUD function
+    db_item = crud_item.get_item(db, item_id)
     if db_item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    return db_item
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    # Save the image file and get the path
+    image_url = crud_image.save_image(file)
+    
+    # Create the Image entry in the database, associating it with the item
+    image_create_data = {"filename": file.filename, "url": image_url, "item_id": item_id}
+    db_image = crud_image.create_image_for_item(db, item_id=item_id, image_data=image_create_data)
+    
+    return db_image
 
-@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete an item by ID")
-def delete_existing_item(item_id: int, db: Session = Depends(get_db)):
+# Endpoint for creating a new item
+@router.post("/", response_model=ItemResponse)
+def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     """
-    Delete an item by its ID. This will also delete associated images.
+    Create a new item.
     """
-    db_item = delete_item(db=db, item_id=item_id) # Direct call to CRUD function
+    return crud_item.create_item(db=db, item=item)
+
+# Endpoint for updating an existing item
+@router.put("/{item_id}", response_model=ItemResponse)
+def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
+    """
+    Update an existing item by its ID.
+    """
+    db_item = crud_item.get_item(db, item_id)
     if db_item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    return {"message": "Item deleted successfully"}
+        raise HTTPException(status_code=404, detail="Item not found")
+    return crud_item.update_item(db=db, item_id=item_id, item=item)
 
-@router.post("/{item_id}/clone", response_model=ItemResponse, summary="Clone an item by ID")
-def clone_existing_item(item_id: int, db: Session = Depends(get_db)):
+# Endpoint for deleting an item
+@router.delete("/{item_id}", response_model=ItemResponse)
+def delete_item(item_id: int, db: Session = Depends(get_db)):
     """
-    Create a clone of an existing item, including its images.
-    The cloned item's name will be appended with " (Cloned)".
+    Delete an item by its ID.
     """
-    cloned_item = clone_item(db=db, item_id=item_id) # Direct call to CRUD function
-    if cloned_item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    return cloned_item
-
-@router.patch("/{item_id}/move", response_model=ItemResponse, summary="Move an item to a different folder")
-def move_item_to_folder(item_id: int, new_folder_id: Optional[int] = None, db: Session = Depends(get_db)):
-    """
-    Move an item to a new folder. Set `new_folder_id` to `None` to move it to the root.
-    """
-    db_item = move_item(db=db, item_id=item_id, new_folder_id=new_folder_id) # Direct call to CRUD function
+    db_item = crud_item.get_item(db, item_id)
     if db_item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or target folder invalid")
-    return db_item
+        raise HTTPException(status_code=404, detail="Item not found")
+    return crud_item.delete_item(db=db, item_id=item_id)

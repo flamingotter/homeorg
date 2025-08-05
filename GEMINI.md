@@ -1,0 +1,1 @@
+This is a home organization and inventory app, designed for both desktop and mobile browsers.

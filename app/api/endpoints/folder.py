@@ -1,7 +1,8 @@
 # app/api/endpoints/folder.py
 # FastAPI router for Folder operations.
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
@@ -94,10 +95,10 @@ def delete_existing_folder(folder_id: int, db: Session = Depends(get_db)):
     """
     Delete a folder by its ID. This will recursively delete all its subfolders, items, and associated images.
     """
-    db_folder = delete_folder(db=db, folder_id=folder_id) # Direct call
+    db_folder = delete_folder(db=db, folder_id=folder_id)
     if db_folder is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
-    return {"message": "Folder and its contents deleted successfully"}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{folder_id}/clone", response_model=FolderResponse, summary="Clone a folder by ID")

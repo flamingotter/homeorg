@@ -1,7 +1,7 @@
 # app/api/endpoints/item.py
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status, Response, status, Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -81,7 +81,7 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
     return crud_item.update_item(db=db, item_id=item_id, item=item)
 
 # Endpoint for deleting an item
-@router.delete("/{item_id}", response_model=ItemResponse)
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(item_id: int, db: Session = Depends(get_db)):
     """
     Delete an item by its ID.
@@ -89,4 +89,5 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
     db_item = crud_item.get_item(db, item_id)
     if db_item is None:
         raise HTTPException(status_code=404, detail="Item not found")
-    return crud_item.delete_item(db=db, item_id=item_id)
+    crud_item.delete_item(db=db, item_id=item_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

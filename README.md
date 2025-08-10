@@ -11,6 +11,9 @@ here is a list of desired features:
 * Cloning: Ability to clone an item with all of it's attributes. 
 * View and manage items and folders in a hierarchical structure.
 * Search and Filtering: Enhance search capabilities to find specific items or folders based on various criteria.
+* Add books using barcode scanning with mobile device camera and ISBN lookup using Amazons Product Advertising API.
+* label printing with QR code generation.
+* QR code scanning and lookup. scanniucode takes user to floder or item details page.
 
 ### Folder Management:
 * Create new folders and sub-folders.

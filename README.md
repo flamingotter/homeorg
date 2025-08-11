@@ -14,6 +14,7 @@ here is a list of desired features:
 * Add books using barcode scanning with mobile device camera and ISBN lookup using Amazons Product Advertising API.
 * label printing with QR code generation.
 * QR code scanning and lookup. scanniucode takes user to floder or item details page.
+* Reliable method to upgrade, backup, and migrate the database.
 
 ### Folder Management:
 * Create new folders and sub-folders.

@@ -209,6 +209,21 @@ def get_folder_total_quantity(folder_id: int, db: Session = Depends(get_db)):
     return {"quantity": total_quantity}
 
 
+@router.get("/{folder_id}/parent", response_model=Optional[FolderResponse], summary="Get the parent of a folder")
+def get_folder_parent(folder_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieves the parent folder of a specified folder.
+    Returns null if the folder is at the root level.
+    """
+    db_folder = get_folder(db=db, folder_id=folder_id)
+    if db_folder is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+    
+    if db_folder.parent:
+        return _post_process_folder_response(db_folder.parent)
+    return None
+
+
 # NEW: Endpoint to upload an image for a folder
 @router.post("/{folder_id}/images/", response_model=ImageResponse, summary="Upload an image for a folder")
 async def upload_image_for_folder(folder_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):

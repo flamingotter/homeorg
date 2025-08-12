@@ -23,51 +23,7 @@ IMAGE_DIR = "static/images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 
-@router.post("/upload/", status_code=status.HTTP_201_CREATED, summary="Upload an image file and create a record")
-async def upload_image_file(
-    file: UploadFile = File(...),
-    folder_id: Optional[int] = None,
-    item_id: Optional[int] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Uploads an image file and associates it with either a folder or an item.
-    This endpoint handles the file upload and creates a corresponding database record.
-    """
-    if not folder_id and not item_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You must provide either a folder_id or an item_id."
-        )
 
-    if folder_id and item_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image cannot be associated with both a folder and an item."
-        )
-
-    # Sanitize the filename to prevent path traversal attacks
-    filename = os.path.basename(file.filename)
-    file_location = os.path.join(IMAGE_DIR, filename)
-
-    try:
-        # Write the uploaded file to disk
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to save file: {e}")
-
-    # Create a database record for the image
-    image_data = ImageCreate(
-        filepath=file_location,
-        filename=filename, # Fix: Pass the filename as well
-        folder_id=folder_id,
-        item_id=item_id
-    )
-
-    db_image = create_image(db=db, image=image_data)
-
-    return {"message": "Image uploaded successfully", "filename": filename, "image_id": db_image.id}
 
 
 @router.post("/", response_model=ImageResponse, status_code=status.HTTP_201_CREATED, summary="Create a new image record")

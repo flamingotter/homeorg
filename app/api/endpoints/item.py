@@ -1,21 +1,21 @@
-# app/api/endpoints/item.py
-
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status, Response, status, Response
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status, Response
 from sqlalchemy.orm import Session
+import os # Added
+import shutil # Added
 
 from app.db.session import get_db
 from app.crud import item as crud_item
 from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
+from app.schemas.image import ImageCreate, ImageResponse
 
 # Import image crud and router to handle image association
-from app.crud import image as crud_image
-from app.schemas.image import ImageResponse
-
-from app.api.endpoints import image as image_router
-from app.api.endpoints import counts as counts_router
-
 router = APIRouter()
+
+# Define the directory where images will be stored.
+# This must match the directory mounted in main.py
+IMAGE_DIR = "static/images"
+os.makedirs(IMAGE_DIR, exist_ok=True) # Ensure directory exists
 
 # New endpoint to get all items
 @router.get("/", response_model=List[ItemResponse])
@@ -39,26 +39,37 @@ def read_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
     return db_item
 
-@router.post("/{item_id}/add_image", response_model=ImageResponse)
-def add_image_to_item(
-    item_id: int,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
+@router.post("/{item_id}/images/", response_model=ImageResponse, summary="Upload an image for an item")
+async def upload_image_for_item(item_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """
-    Adds an image to a specific item.
+    Uploads an image file and associates it with an item.
+    The image file will be saved to `/app/static/images/`.
     """
     db_item = crud_item.get_item(db, item_id)
     if db_item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    # Save the image file and get the path
-    image_url = crud_image.save_image(file)
-    
-    # Create the Image entry in the database, associating it with the item
-    image_create_data = {"filename": file.filename, "url": image_url, "item_id": item_id}
-    db_image = crud_image.create_image_for_item(db, item_id=item_id, image_data=image_create_data)
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    # Sanitize the filename to prevent path traversal attacks
+    filename = os.path.basename(file.filename)
+    file_location = os.path.join(IMAGE_DIR, filename)
+
+    try:
+        # Save the file to the static directory
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to save file: {e}")
+
+    # Create a database record for the image
+    image_create_data = ImageCreate(
+        filename=filename,
+        filepath=f"/static_images/{filename}", # Use /static_images/ prefix for frontend
+        description=f"Image for item {db_item.name}",
+        item_id=item_id,
+        folder_id=None # Ensure folder_id is None for item images
+    )
+    db_image = crud_image.create_image(db=db, image=image_create_data)
+
     return db_image
 
 # Endpoint for creating a new item

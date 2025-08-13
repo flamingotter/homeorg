@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status, Response
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status, Response, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import os
@@ -7,6 +7,7 @@ import shutil
 
 from app.db.session import get_db
 from app.crud import item as crud_item
+from app.crud import image as crud_image
 from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 from app.schemas.image import ImageCreate, ImageResponse
 
@@ -59,8 +60,49 @@ async def upload_image_for_item(item_id: int, file: UploadFile = File(...), db: 
     return db_image
 
 @router.post("/", response_model=ItemResponse)
-def create_item(item: ItemCreate, db: Session = Depends(get_db)):
-    return crud_item.create_item(db=db, item=item)
+async def create_item(
+    db: Session = Depends(get_db),
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    quantity: Optional[float] = Form(1.0),
+    unit: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    acquired_date: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    folder_id: Optional[int] = Form(None),
+    image: Optional[UploadFile] = File(None)
+):
+    item_schema = ItemCreate(
+        name=name, 
+        description=description, 
+        quantity=quantity, 
+        unit=unit, 
+        tags=tags, 
+        acquired_date=acquired_date, 
+        notes=notes, 
+        folder_id=folder_id
+    )
+    db_item = crud_item.create_item(db=db, item=item_schema)
+
+    if image:
+        filename = os.path.basename(image.filename)
+        file_location = os.path.join(IMAGE_DIR, filename)
+        try:
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            
+            image_schema = ImageCreate(
+                filename=filename,
+                filepath=f"/static_images/{filename}",
+                description=f"Image for item {db_item.name}",
+                item_id=db_item.id
+            )
+            crud_image.create_image(db=db, image=image_schema)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Item created, but failed to upload image: {e}")
+
+    db.refresh(db_item)
+    return db_item
 
 @router.put("/{item_id}", response_model=ItemResponse)
 def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):

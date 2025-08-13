@@ -523,7 +523,10 @@ addItemForm.addEventListener('submit', async (event) => {
     formData.append('tags', document.getElementById('modalItemTags').value);
     formData.append('acquired_date', document.getElementById('modalItemAcquiredDate').value);
     formData.append('notes', document.getElementById('modalItemNotes').value);
-    formData.append('folder_id', document.getElementById('modalItemFolderId').value || null);
+    const folderIdValue = document.getElementById('modalItemFolderId').value;
+    if (folderIdValue) {
+        formData.append('folder_id', folderIdValue);
+    }
 
     const itemImageFile = document.getElementById('modalItemImageFile').files[0] || document.getElementById('modalItemCameraFile').files[0];
     if (itemImageFile) {

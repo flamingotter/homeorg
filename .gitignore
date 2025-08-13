@@ -141,3 +141,6 @@ temp/
 #Alembic 
 alembic/versions/
 # alembic.ini #if it contains sensitive info
+
+# User-uploaded content
+/static/images/

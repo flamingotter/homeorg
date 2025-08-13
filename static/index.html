@@ -157,6 +157,19 @@
     <!-- Custom Message Box -->
     <div class="message-box" id="messageBox" style="display: none;"></div>
 
+    <!-- Folder Selection Modal -->
+    <div id="folder-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" id="close-folder-selection-modal">&times;</span>
+            <h2>Select Destination Folder</h2>
+            <div id="folder-tree-container">
+                <!-- Folder hierarchy will be loaded here -->
+            </div>
+            <button id="select-folder-button" class="btn-primary">Select Folder</button>
+            <button id="select-root-button" class="btn-secondary">Move to Root</button>
+        </div>
+    </div>
+
     <!-- Link to the external JavaScript file -->
     <script src="/script.js?v=1.1.0"></script>
 </body>

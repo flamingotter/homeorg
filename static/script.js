@@ -212,49 +212,8 @@ function showOptionsMenu(buttonElement, type, data) {
             console.log('Move action triggered.');
             console.log('Type:', type);
             console.log('Data object:', data);
-
-            // --- Placeholder for folder selection UI ---
-            // In a real application, you would open a modal here
-            // to allow the user to select a destination folder.
-            // For demonstration, let's assume we want to move it to the root (null)
-            // or a hardcoded folder ID for testing.
-            const newDestinationId = prompt(`Enter new ${type === 'item' ? 'folder' : 'parent'} ID (or leave blank for root):`);
-            let targetId = null;
-            if (newDestinationId !== null && newDestinationId.trim() !== '') {
-                targetId = parseInt(newDestinationId, 10);
-                if (isNaN(targetId)) {
-                    showMessage('Invalid ID. Please enter a number or leave blank for root.', true);
-                    closeAllMenus();
-                    return;
-                }
-            }
-            // --- End Placeholder ---
-
-            try {
-                let url;
-                let options = { method: 'PATCH' }; // Use PATCH for move operations
-                options.headers = { 'Content-Type': 'application/json' };
-
-                if (type === 'item') {
-                    url = `/items/${data.id}/move`;
-                    options.body = JSON.stringify({ new_folder_id: targetId });
-                } else { // type === 'folder'
-                    url = `/folders/${data.id}/move`;
-                    options.body = JSON.stringify({ new_parent_id: targetId });
-                }
-
-                const response = await fetch(url, options);
-                if (response.ok) {
-                    showMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} moved.`);
-                    loadFolderView(); // Refresh view
-                } else {
-                    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                    showMessage(`Error: ${error.detail}`, true);
-                }
-            } catch (err) {
-                showMessage('Move failed.', true);
-            }
-            closeAllMenus();
+            openFolderSelectionModal(type, data); // Call the new modal
+            closeAllMenus(); // Close the options menu
             return;
         }
 
@@ -666,4 +625,148 @@ addEditModal.addEventListener('transitionend', (event) => {
     if (event.propertyName === 'opacity' && addEditModal.style.display === 'block') {
         populateUnitDropdown();
     }
+});
+
+// Global variables for folder selection
+let currentMoveType = null; // 'item' or 'folder'
+let currentMoveData = null; // The item or folder object being moved
+let selectedFolderId = null; // The ID of the folder selected in the modal
+
+// --- Folder Selection Modal Functions ---
+function openFolderSelectionModal(type, data) {
+    currentMoveType = type;
+    currentMoveData = data;
+    selectedFolderId = null; // Reset selection
+    document.getElementById('folder-selection-modal').style.display = 'block';
+    loadFolderTree(); // Call to load the folder tree
+}
+
+function closeFolderSelectionModal() {
+    document.getElementById('folder-selection-modal').style.display = 'none';
+    document.getElementById('folder-tree-container').innerHTML = ''; // Clear tree
+    selectedFolderId = null; // Clear selection
+}
+
+async function loadFolderTree() {
+    const folderTreeContainer = document.getElementById('folder-tree-container');
+    folderTreeContainer.innerHTML = '<div class="loading">Loading folders...</div>'; // Loading indicator
+
+    try {
+        const rootFolders = await fetch('/folders/').then(res => res.json());
+        folderTreeContainer.innerHTML = ''; // Clear loading indicator
+
+        // Option to select root
+        const rootOption = document.createElement('div');
+        rootOption.className = 'folder-node root-node';
+        rootOption.textContent = 'Root Folder (No Parent)';
+        rootOption.dataset.folderId = 'null'; // Use 'null' string for root
+        rootOption.addEventListener('click', () => {
+            selectFolderNode(null, rootOption);
+        });
+        folderTreeContainer.appendChild(rootOption);
+
+        for (const folder of rootFolders) {
+            // Only display top-level folders that are actual root folders (parent_id is null)
+            if (folder.parent_id === null) {
+                renderFolderNode(folder, folderTreeContainer, 0);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading folder tree:', error);
+        showMessage('Failed to load folders for selection.', true);
+        folderTreeContainer.innerHTML = '<div class="error">Failed to load folders.</div>';
+    }
+}
+
+function renderFolderNode(folder, parentElement, level) {
+    const folderNode = document.createElement('div');
+    folderNode.className = 'folder-node';
+    folderNode.dataset.folderId = folder.id;
+    folderNode.style.paddingLeft = `${level * 20}px`; // Indent subfolders
+
+    const folderName = document.createElement('span');
+    folderName.textContent = folder.name;
+    folderNode.appendChild(folderName);
+
+    // Add click listener for selection
+    folderNode.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent parent clicks
+        selectFolderNode(folder.id, folderNode);
+    });
+
+    parentElement.appendChild(folderNode);
+
+    // Recursively render subfolders
+    if (folder.subfolders && folder.subfolders.length > 0) {
+        for (const subfolder of folder.subfolders) {
+            renderFolderNode(subfolder, parentElement, level + 1);
+        }
+    }
+}
+
+function selectFolderNode(folderId, element) {
+    // Remove 'selected' class from previously selected node
+    const previouslySelected = document.querySelector('.folder-node.selected');
+    if (previouslySelected) {
+        previouslySelected.classList.remove('selected');
+    }
+
+    // Add 'selected' class to the new node
+    if (element) {
+        element.classList.add('selected');
+    }
+    selectedFolderId = folderId;
+    console.log('Selected Folder ID:', selectedFolderId);
+}
+
+// Event listeners for the new modal's close button
+document.getElementById('close-folder-selection-modal').addEventListener('click', closeFolderSelectionModal);
+window.addEventListener('click', (event) => {
+    if (event.target === document.getElementById('folder-selection-modal')) {
+        closeFolderSelectionModal();
+    }
+});
+
+// Event listener for the "Select Folder" button
+document.getElementById('select-folder-button').addEventListener('click', async () => {
+    if (selectedFolderId === undefined) {
+        showMessage('Please select a destination folder.', true);
+        return;
+    }
+
+    try {
+        let url;
+        let body;
+
+        if (currentMoveType === 'item') {
+            url = `/items/${currentMoveData.id}/move`;
+            body = JSON.stringify({ new_folder_id: selectedFolderId });
+        } else { // 'folder'
+            url = `/folders/${currentMoveData.id}/move`;
+            body = JSON.stringify({ new_parent_id: selectedFolderId });
+        }
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: body
+        });
+
+        if (response.ok) {
+            showMessage(`${currentMoveType.charAt(0).toUpperCase() + currentMoveType.slice(1)} moved successfully.`);
+            closeFolderSelectionModal();
+            loadFolderView(); // Refresh the view
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            showMessage(`Error moving: ${error.detail}`, true);
+        }
+    } catch (err) {
+        showMessage('Move operation failed.', true);
+    }
+});
+
+// Event listener for the "Move to Root" button
+document.getElementById('select-root-button').addEventListener('click', async () => {
+    selectedFolderId = null; // Explicitly set to null for root
+    document.getElementById('select-folder-button').click(); // Trigger the move
 });

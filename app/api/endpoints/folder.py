@@ -3,6 +3,7 @@
 
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
@@ -27,6 +28,12 @@ router = APIRouter(
 )
 
 logging.basicConfig(level=logging.INFO) # Configure basic logging
+
+class FolderClone(BaseModel):
+    new_parent_id: Optional[int] = None
+
+class FolderMove(BaseModel):
+    new_parent_id: Optional[int] = None
 
 def _post_process_folder_response(folder_model) -> FolderResponse: # Removed type hint for folder_model to avoid direct model import
     """
@@ -102,24 +109,24 @@ def delete_existing_folder(folder_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{folder_id}/clone", response_model=FolderResponse, summary="Clone a folder by ID")
-def clone_existing_folder(folder_id: int, new_parent_id: Optional[int] = None, db: Session = Depends(get_db)):
+def clone_existing_folder(folder_id: int, clone_data: FolderClone, db: Session = Depends(get_db)):
     """
     Create a clone of an existing folder, including all its subfolders, items, and images recursively.
     Optionally specify a `new_parent_id` to place the cloned folder.
     """
-    cloned_folder = clone_folder(db=db, folder_id=folder_id, new_parent_id=new_parent_id) # Direct call
+    cloned_folder = clone_folder(db=db, folder_id=folder_id, new_parent_id=clone_data.new_parent_id) # Direct call
     if cloned_folder is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or target parent invalid")
     return _post_process_folder_response(cloned_folder)
 
 
-@router.patch("/{folder_id}/move", response_model=FolderResponse, summary="Move a folder to a different parent folder")
-def move_folder_to_parent(folder_id: int, new_parent_id: Optional[int] = None, db: Session = Depends(get_db)):
+@router.put("/{folder_id}/move", response_model=FolderResponse, summary="Move a folder to a different parent folder")
+def move_folder_to_parent(folder_id: int, move_data: FolderMove, db: Session = Depends(get_db)):
     """
     Move a folder to a new parent folder. Set `new_parent_id` to `None` to move it to the root.
     Prevents moving a folder into itself or its subfolders.
     """
-    db_folder = move_folder(db=db, folder_id=folder_id, new_parent_id=new_parent_id) # Direct call
+    db_folder = move_folder(db=db, folder_id=folder_id, new_parent_id=move_data.new_parent_id) # Direct call
     if db_folder is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Folder not found or invalid target parent")
     return _post_process_folder_response(db_folder)

@@ -116,3 +116,14 @@ def clone_item(item_id: int, new_folder_id: Optional[int] = None, db: Session = 
     db.commit()
     db.refresh(cloned_item)
     return cloned_item
+
+# Endpoint for moving an item
+@router.patch("/{item_id}/move", response_model=ItemResponse)
+def move_item(item_id: int, new_folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """
+    Move an item to a different folder. Set new_folder_id to None to move to the root.
+    """
+    db_item = crud_item.move_item(db=db, item_id=item_id, new_folder_id=new_folder_id)
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="Item not found or target folder invalid")
+    return db_item

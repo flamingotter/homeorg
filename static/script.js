@@ -207,7 +207,56 @@ function showOptionsMenu(buttonElement, type, data) {
             if (type === 'item') displayItemDetails(data);
             else { currentFolderId = data.id; loadFolderView(); }
         }
-        // Add logic for Move etc. here
+
+        if (action === 'Move') {
+            console.log('Move action triggered.');
+            console.log('Type:', type);
+            console.log('Data object:', data);
+
+            // --- Placeholder for folder selection UI ---
+            // In a real application, you would open a modal here
+            // to allow the user to select a destination folder.
+            // For demonstration, let's assume we want to move it to the root (null)
+            // or a hardcoded folder ID for testing.
+            const newDestinationId = prompt(`Enter new ${type === 'item' ? 'folder' : 'parent'} ID (or leave blank for root):`);
+            let targetId = null;
+            if (newDestinationId !== null && newDestinationId.trim() !== '') {
+                targetId = parseInt(newDestinationId, 10);
+                if (isNaN(targetId)) {
+                    showMessage('Invalid ID. Please enter a number or leave blank for root.', true);
+                    closeAllMenus();
+                    return;
+                }
+            }
+            // --- End Placeholder ---
+
+            try {
+                let url;
+                let options = { method: 'PATCH' }; // Use PATCH for move operations
+                options.headers = { 'Content-Type': 'application/json' };
+
+                if (type === 'item') {
+                    url = `/items/${data.id}/move`;
+                    options.body = JSON.stringify({ new_folder_id: targetId });
+                } else { // type === 'folder'
+                    url = `/folders/${data.id}/move`;
+                    options.body = JSON.stringify({ new_parent_id: targetId });
+                }
+
+                const response = await fetch(url, options);
+                if (response.ok) {
+                    showMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} moved.`);
+                    loadFolderView(); // Refresh view
+                } else {
+                    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                    showMessage(`Error: ${error.detail}`, true);
+                }
+            } catch (err) {
+                showMessage('Move failed.', true);
+            }
+            closeAllMenus();
+            return;
+        }
 
         closeAllMenus();
     });

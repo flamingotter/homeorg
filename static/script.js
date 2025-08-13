@@ -164,6 +164,14 @@ function showOptionsMenu(buttonElement, type, data) {
         }
 
         if (action === 'Clone') {
+            console.log('Cloning action triggered.');
+            console.log('Type:', type);
+            console.log('Data object:', data);
+            if (type === 'item') {
+                console.log('Item folder_id:', data.folder_id);
+            } else if (type === 'folder') {
+                console.log('Folder parent_id:', data.parent_id);
+            }
             try {
                 let url;
                 let options = { method: 'POST' };
@@ -173,8 +181,10 @@ function showOptionsMenu(buttonElement, type, data) {
                     // Send the current folder_id as new_folder_id
                     options.headers = { 'Content-Type': 'application/json' };
                     options.body = JSON.stringify({ new_folder_id: data.folder_id });
-                } else {
+                } else { // type === 'folder'
                     url = `/folders/${data.id}/clone`;
+                    options.headers = { 'Content-Type': 'application/json' }; // Add content type header
+                    options.body = JSON.stringify({ new_parent_id: data.parent_id }); // Send parent_id
                 }
 
                 const response = await fetch(url, options);

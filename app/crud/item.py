@@ -67,36 +67,40 @@ def delete_item(db: Session, item_id: int) -> Optional[models.Item]:
         db.commit()
     return db_item
 
-def clone_item(db: Session, item_id: int) -> Optional[models.Item]:
+def clone_item(db: Session, item_id: int, new_folder_id: Optional[int] = None) -> Optional[models.Item]:
     """
     Clones an item with all its attributes and associated images.
+    Does not commit the transaction.
     """
-    original_item = get_item(db, item_id) # Use get_item to load images
+    original_item = get_item(db, item_id)
     if not original_item:
         return None
 
     # Create a new item with the same attributes, appending " (Cloned)" to the name
-    new_item_data = original_item.__dict__.copy()
-    new_item_data.pop("id", None) # Remove ID to allow database to assign a new one
-    new_item_data.pop("_sa_instance_state", None) # Remove SQLAlchemy internal state
-    new_item_data["name"] = f"{original_item.name} (Cloned)"
+    new_item_data = {
+        "name": f"{original_item.name} (Cloned)",
+        "description": original_item.description,
+        "quantity": original_item.quantity,
+        "unit": original_item.unit,
+        "notes": original_item.notes,
+        "tags": original_item.tags,
+        "folder_id": new_folder_id if new_folder_id is not None else original_item.folder_id,
+    }
     
-    # Create the new item
-    new_item = models.Item(**new_item_data) # Use models.Item
+    new_item = models.Item(**new_item_data)
     db.add(new_item)
-    db.flush() # Flush to get the new_item.id before cloning images
+    db.flush()
 
     # Clone associated images
     for original_image in original_item.images:
-        new_image_data = original_image.__dict__.copy()
-        new_image_data.pop("id", None)
-        new_image_data.pop("_sa_instance_state", None)
-        new_image_data["item_id"] = new_item.id # Link to the new cloned item
-        new_image_data["folder_id"] = None # Ensure it's an item image
-        db.add(models.Image(**new_image_data)) # Use models.Image
+        new_image_data = {
+            "filename": original_image.filename,
+            "filepath": original_image.filepath,
+            "description": original_image.description,
+            "item_id": new_item.id,
+        }
+        db.add(models.Image(**new_image_data))
 
-    db.commit()
-    db.refresh(new_item)
     return new_item
 
 def move_item(db: Session, item_id: int, new_folder_id: Optional[int]) -> Optional[models.Item]:

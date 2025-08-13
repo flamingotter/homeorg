@@ -10,6 +10,8 @@ from .image import ImageResponse # Import ImageResponse for nesting
 class FolderBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Name of the folder")
     description: Optional[str] = Field(None, max_length=500, description="Description of the folder")
+    notes: Optional[str] = Field(None, description="Notes for the folder")
+    tags: Optional[str] = Field(None, description="Tags for the folder, comma-separated")
     parent_id: Optional[int] = Field(None, description="ID of the parent folder (None for root folders)")
 
 # Schema for creating a new Folder
@@ -19,6 +21,10 @@ class FolderCreate(FolderBase):
 # Schema for updating an existing Folder
 class FolderUpdate(FolderBase):
     pass
+
+# Schema for cloning a folder, to specify the new parent ID
+class FolderCloneRequest(BaseModel):
+    new_parent_id: Optional[int] = Field(None, description="ID of the new parent folder for the cloned folder (None for root)")
 
 # Schema for reading/responding with Folder data
 # This includes nested items and subfolders for a hierarchical view

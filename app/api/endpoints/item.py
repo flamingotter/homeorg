@@ -102,3 +102,17 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
     crud_item.delete_item(db=db, item_id=item_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# Endpoint for cloning an item
+@router.post("/{item_id}/clone", response_model=ItemResponse)
+def clone_item(item_id: int, new_folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """
+    Clone an existing item. Optionally, place the clone in a different folder.
+    """
+    cloned_item = crud_item.clone_item(db=db, item_id=item_id, new_folder_id=new_folder_id)
+    if cloned_item is None:
+        raise HTTPException(status_code=404, detail="Item not found or target folder invalid")
+    db.commit()
+    db.refresh(cloned_item)
+    return cloned_item

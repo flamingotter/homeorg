@@ -1,6 +1,7 @@
 # app/models/folder.py
 
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.db.base import Base # Ensure this import is correct relative to your current structure
 
@@ -13,24 +14,25 @@ class Folder(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
-    # parent_id allows for hierarchical folder structure
+    notes = Column(Text, nullable=True)
+    tags = Column(String, nullable=True)
     parent_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
 
-    # Relationships
-    # A folder can have multiple subfolders
+    # Explicitly define the many-to-one relationship to the parent folder
+    parent = relationship(
+        "Folder",
+        remote_side=[id], # 'id' is the primary key of the parent
+        back_populates="subfolders", # Links back to the 'subfolders' attribute in the child Folder model
+        uselist=False, # A folder has only one parent
+    )
+
+    # Define the one-to-many relationship to subfolders
     subfolders = relationship(
         "Folder",
-        # Explicit primaryjoin for self-referential one-to-many
-        # This means: Folder.id (of the parent) == Folder.parent_id (of the child)
-        primaryjoin="Folder.id == Folder.parent_id",
-        # Explicitly declare the foreign key column(s) involved in this relationship
-        # from the perspective of the *child* (the "remote" side).
-        foreign_keys=[parent_id], # Refers to the parent_id column defined in this class
-        backref="parent", # Allows accessing the parent folder from a subfolder
-        cascade="all, delete-orphan", # When a folder is deleted, its subfolders are also deleted
-        uselist=True, # Explicitly state this is a collection (default for one-to-many, but good for clarity)
-        remote_side=[id], # THIS IS THE CRUCIAL ADDITION to disambiguate the relationship direction
-        single_parent=True # THIS IS THE NEW ADDITION to allow delete-orphan cascade on self-referential relationship
+        back_populates="parent", # Links back to the 'parent' attribute in the parent Folder model
+        cascade="all, delete-orphan",
+        single_parent=True,
+        uselist=True,
     )
     # A folder can contain multiple items
     items = relationship(

@@ -83,58 +83,47 @@ def clone_folder(db: Session, folder_id: int, new_parent_id: Optional[int] = Non
     """
     Clones a folder, including all its subfolders, items, and images recursively.
     """
-    original_folder = get_folder(db, folder_id) # Use get_folder to load relationships
+    original_folder = get_folder(db, folder_id)
     if not original_folder:
         return None
 
     # Helper function for recursive cloning
     def _recursive_clone(original_f: models.Folder, parent_id: Optional[int]) -> models.Folder:
         # Clone the folder itself
-        new_folder_data = original_f.__dict__.copy()
-        new_folder_data.pop("id", None) # Remove ID to allow database to assign a new one
-        new_folder_data.pop("_sa_instance_state", None) # Remove SQLAlchemy internal state
-        new_folder_data["name"] = f"{original_f.name} (Cloned)"
-        new_folder_data["parent_id"] = parent_id
-        
-        new_folder = models.Folder(**new_folder_data) # Use models.Folder
+        new_folder_data = {
+            "name": f"{original_f.name} (Cloned)",
+            "description": original_f.description,
+            "notes": original_f.notes,
+            "tags": original_f.tags,
+            "parent_id": parent_id if parent_id is not None else original_f.parent_id,
+        }
+        print(f"DEBUG: _recursive_clone - new_folder_data: {new_folder_data}")
+        print(f"DEBUG: _recursive_clone - parent_id received: {parent_id}")
+
+        new_folder = models.Folder(**new_folder_data)
         db.add(new_folder)
         db.flush() # Flush to get the new_folder.id before committing
+        print(f"DEBUG: _recursive_clone - new_folder created with ID: {new_folder.id}, parent_id: {new_folder.parent_id}")
 
         # Clone items within this folder
+        from app.crud.item import clone_item
         for original_item in original_f.items:
-            new_item_data = original_item.__dict__.copy()
-            new_item_data.pop("id", None)
-            new_item_data.pop("_sa_instance_state", None)
-            new_item_data["folder_id"] = new_folder.id # Assign to the new cloned folder
-            new_item_data["name"] = f"{original_item.name} (Cloned)" # Also clone item name
-            
-            new_cloned_item = models.Item(**new_item_data) # Use models.Item
-            db.add(new_cloned_item)
-            db.flush() # Flush to get new_cloned_item.id for images
-
-            # Clone images associated with this item
-            for original_item_image in original_item.images:
-                new_item_image_data = original_item_image.__dict__.copy()
-                new_item_image_data.pop("id", None)
-                new_item_image_data.pop("_sa_instance_state", None)
-                new_item_image_data["item_id"] = new_cloned_item.id
-                new_item_image_data["folder_id"] = None # Ensure it's an item image
-                db.add(models.Image(**new_item_image_data)) # Use models.Image
-
+            clone_item(db, original_item.id, new_folder.id)
 
         # Clone images associated with this folder
         for original_folder_image in original_f.images:
-            new_folder_image_data = original_folder_image.__dict__.copy()
-            new_folder_image_data.pop("id", None)
-            new_folder_image_data.pop("_sa_instance_state", None)
-            new_folder_image_data["folder_id"] = new_folder.id # Assign to the new cloned folder
-            new_folder_image_data["item_id"] = None # Ensure it's a folder image
-            db.add(models.Image(**new_folder_image_data)) # Use models.Image
+            new_image_data = {
+                "filename": original_folder_image.filename,
+                "filepath": original_folder_image.filepath,
+                "description": original_folder_image.description,
+                "folder_id": new_folder.id,
+            }
+            db.add(models.Image(**new_image_data))
 
         # Recursively clone subfolders
-        for original_subfolder in original_f.subfolders: # Use 'subfolders' as per latest models.py
+        for original_subfolder in original_f.subfolders:
             _recursive_clone(original_subfolder, new_folder.id)
-        
+
         return new_folder
 
     # Start the recursive cloning process

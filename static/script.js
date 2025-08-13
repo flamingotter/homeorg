@@ -474,7 +474,10 @@ addFolderForm.addEventListener('submit', async (event) => {
     formData.append('description', document.getElementById('modalFolderDescription').value);
     formData.append('notes', document.getElementById('modalFolderNotes').value);
     formData.append('tags', document.getElementById('modalFolderTags').value);
-    formData.append('parent_id', document.getElementById('modalFolderParentId').value || null);
+    const parentIdValue = document.getElementById('modalFolderParentId').value;
+    if (parentIdValue) {
+        formData.append('parent_id', parentIdValue);
+    }
 
     const folderImageFile = document.getElementById('modalFolderImageFile').files[0] || document.getElementById('modalFolderCameraFile').files[0];
     if (folderImageFile) {

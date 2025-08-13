@@ -2,7 +2,7 @@
 # FastAPI router for Folder operations.
 
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -57,11 +57,52 @@ def _post_process_folder_response(folder_model) -> FolderResponse: # Removed typ
 
 
 @router.post("/", response_model=FolderResponse, status_code=status.HTTP_201_CREATED, summary="Create a new folder")
-def create_new_folder(folder: FolderCreate, db: Session = Depends(get_db)):
+async def create_new_folder(
+    db: Session = Depends(get_db),
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    parent_id: Optional[int] = Form(None),
+    image: Optional[UploadFile] = File(None)
+):
     """
-    Create a new inventory folder with the provided details.
+    Create a new inventory folder with the provided details and an optional image.
     """
-    db_folder = create_folder(db=db, folder=folder) # Direct call
+    # Step 1: Create the folder schema from form data
+    folder_schema = FolderCreate(name=name, description=description, notes=notes, tags=tags, parent_id=parent_id)
+    
+    # Step 2: Create the folder in the database
+    db_folder = create_folder(db=db, folder=folder_schema)
+
+    # Step 3: Handle the image upload, if provided
+    if image:
+        UPLOAD_DIRECTORY = "/app/static/images"
+        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIRECTORY, image.filename)
+        
+        try:
+            with open(file_path, "wb") as image_file:
+                content = await image.read()
+                image_file.write(content)
+            
+            image_schema = ImageCreate(
+                filename=image.filename,
+                filepath=f"/static_images/{image.filename}",
+                description=f"Image for folder {db_folder.name}",
+                folder_id=db_folder.id
+            )
+            crud_create_image(db=db, image=image_schema)
+
+        except Exception as e:
+            # If image processing fails, the folder is already created.
+            # Depending on desired behavior, you might want to delete the created folder.
+            # For now, we log the error and raise an exception.
+            logging.error(f"Failed to process image for new folder: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Folder created, but image upload failed.")
+
+    # Refresh the folder object to load relationships before returning
+    db.refresh(db_folder)
     return _post_process_folder_response(db_folder)
 
 

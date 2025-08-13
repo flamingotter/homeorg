@@ -1,6 +1,7 @@
 // /static/script.js
 let currentFolderId = null; // Track the current folder ID
 let allItems = []; // Store all items for easy lookup
+let currentView = 'grid'; // Can be 'grid' or 'item-details'
 
 // --- UTILITY FUNCTIONS ---
 function showMessage(message, isError = false) {
@@ -180,9 +181,13 @@ function closeAllMenus() {
 // --- VIEW & NAVIGATION LOGIC ---
 function loadRootView() {
     currentFolderId = null;
+    currentView = 'grid';
     document.getElementById('back-button').style.display = 'none';
     document.getElementById('home-button').style.display = 'none';
     document.getElementById('header-title').textContent = "HomeOrg";
+    document.getElementById('items-grid').style.display = 'block';
+    document.getElementById('item-details-view').style.display = 'none';
+    document.querySelector('.counts').style.display = 'flex';
 
     Promise.all([
         fetch('/folders/').then(res => res.json()),
@@ -205,9 +210,12 @@ async function loadFolderView() {
         loadRootView();
         return;
     }
-
+    currentView = 'grid';
     document.getElementById('back-button').style.display = 'block';
     document.getElementById('home-button').style.display = 'block';
+    document.getElementById('items-grid').style.display = 'block';
+    document.getElementById('item-details-view').style.display = 'none';
+    document.querySelector('.counts').style.display = 'flex';
 
     try {
         const folder = await fetch(`/folders/${currentFolderId}`).then(res => res.json());
@@ -241,7 +249,8 @@ document.addEventListener('click', (event) => {
 });
 
 async function displayItemDetails(item) {
-    document.getElementById('item-details-title').textContent = item.name;
+    currentView = 'item-details';
+    document.getElementById('header-title').textContent = item.name;
     document.getElementById('item-details-description').textContent = item.description || 'N/A';
     document.getElementById('item-details-quantity').textContent = `${item.quantity || 0} ${item.unit || ''}`;
     document.getElementById('item-details-date').textContent = item.acquired_date || 'N/A';
@@ -270,12 +279,15 @@ async function displayItemDetails(item) {
 
     document.getElementById('items-grid').style.display = 'none';
     document.getElementById('item-details-view').style.display = 'block';
-    document.getElementById('back-button').style.display = 'none';
+    document.getElementById('back-button').style.display = 'block';
+    document.getElementById('home-button').style.display = 'block';
     document.querySelector('.counts').style.display = 'none';
 }
 
 document.getElementById('back-button').addEventListener('click', async () => {
-    if (currentFolderId) {
+    if (currentView === 'item-details') {
+        loadFolderView();
+    } else if (currentFolderId) {
         try {
             const response = await fetch(`/folders/${currentFolderId}/parent`);
             if (response.ok) {

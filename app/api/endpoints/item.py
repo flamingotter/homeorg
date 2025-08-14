@@ -105,11 +105,55 @@ async def create_item(
     return db_item
 
 @router.put("/{item_id}", response_model=ItemResponse)
-def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
+async def update_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    quantity: Optional[float] = Form(1.0),
+    unit: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    acquired_date: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    folder_id: Optional[int] = Form(None),
+    image: Optional[UploadFile] = File(None)
+):
     db_item = crud_item.get_item(db, item_id)
-    if db_item is None:
+    if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return crud_item.update_item(db=db, item_id=item_id, item=item)
+
+    item_update_schema = ItemUpdate(
+        name=name,
+        description=description,
+        quantity=quantity,
+        unit=unit,
+        tags=tags,
+        acquired_date=acquired_date,
+        notes=notes,
+        folder_id=folder_id
+    )
+    
+    updated_item = crud_item.update_item(db=db, item_id=item_id, item=item_update_schema)
+
+    if image:
+        filename = os.path.basename(image.filename)
+        file_location = os.path.join(IMAGE_DIR, filename)
+        try:
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            
+            image_schema = ImageCreate(
+                filename=filename,
+                filepath=f"/static_images/{filename}",
+                description=f"Image for item {updated_item.name}",
+                item_id=updated_item.id
+            )
+            crud_image.create_image(db=db, image=image_schema)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Item updated, but failed to upload new image: {e}")
+
+    db.refresh(updated_item)
+    return updated_item
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(item_id: int, db: Session = Depends(get_db)):

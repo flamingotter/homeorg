@@ -205,8 +205,11 @@ function showOptionsMenu(buttonElement, type, data) {
 
         // Handle other actions
         if (action === 'Details') {
-            if (type === 'item') displayItemDetails(data);
-            else { currentFolderId = data.id; loadFolderView(); }
+            if (type === 'item') {
+                openAddEditModal(type, data);
+            } else { // type === 'folder'
+                openAddEditModal(type, data);
+            }
         }
 
         if (action === 'Move') {
@@ -461,6 +464,7 @@ async function openAddEditModal(type, data = null) {
         if (data) {
             currentEditingItem = data;
             modalTitle.textContent = 'Edit Item';
+            document.getElementById('item-submit-button').textContent = 'Update';
             document.getElementById('modalItemName').value = data.name;
             document.getElementById('modalItemDescription').value = data.description || '';
             document.getElementById('modalItemQuantity').value = data.quantity || '';
@@ -471,12 +475,14 @@ async function openAddEditModal(type, data = null) {
         } else {
             currentEditingItem = null;
             modalTitle.textContent = 'Add New Item';
+            document.getElementById('item-submit-button').textContent = 'Create Item';
         }
     } else if (type === 'folder') {
         switchModalTab('add-folder-form');
         if (data) {
             currentEditingFolder = data;
             modalTitle.textContent = 'Edit Folder';
+            document.getElementById('folder-submit-button').textContent = 'Update';
             document.getElementById('modalFolderName').value = data.name;
             document.getElementById('modalFolderDescription').value = data.description || '';
             document.getElementById('modalFolderNotes').value = data.notes || '';
@@ -484,6 +490,7 @@ async function openAddEditModal(type, data = null) {
         } else {
             currentEditingFolder = null;
             modalTitle.textContent = 'Add New Folder';
+            document.getElementById('folder-submit-button').textContent = 'Create Folder';
         }
     }
 }
@@ -637,25 +644,7 @@ document.getElementById('chooseItemFileButton').addEventListener('click', () => 
     document.getElementById('modalItemImageFile').click();
 });
 
-// Extend showOptionsMenu to include Edit functionality
-const originalShowOptionsMenu = showOptionsMenu;
-showOptionsMenu = (buttonElement, type, data) => {
-    originalShowOptionsMenu(buttonElement, type, data); // Call the original function
 
-    const menu = buttonElement.parentElement.querySelector('.options-menu');
-    if (menu) {
-        const editItem = document.createElement('div');
-        editItem.className = 'menu-item edit-item';
-        editItem.textContent = 'Edit';
-        menu.insertBefore(editItem, menu.firstChild); // Add Edit as the first option
-
-        editItem.addEventListener('click', (event) => {
-            event.stopPropagation();
-            openAddEditModal(type, data); // Use the unified modal function
-            closeAllMenus();
-        });
-    }
-};
 
 // Populate Unit dropdown for Item Form
 async function populateUnitDropdown() {

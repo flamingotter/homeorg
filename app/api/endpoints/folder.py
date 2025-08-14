@@ -127,14 +127,55 @@ def read_all_folders(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 
 
 @router.put("/{folder_id}", response_model=FolderResponse, summary="Update a folder by ID")
-def update_existing_folder(folder_id: int, folder: FolderUpdate, db: Session = Depends(get_db)):
+async def update_existing_folder(
+    folder_id: int,
+    db: Session = Depends(get_db),
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    parent_id: Optional[int] = Form(None),
+    image: Optional[UploadFile] = File(None)
+):
     """
     Update an existing folder's details by its ID.
     """
-    db_folder = update_folder(db=db, folder_id=folder_id, folder=folder) # Direct call
-    if db_folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
-    return _post_process_folder_response(db_folder)
+    
+    db_folder = get_folder(db, folder_id)
+    if not db_folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    folder_update_schema = FolderUpdate(
+        name=name,
+        description=description,
+        notes=notes,
+        tags=tags,
+        parent_id=parent_id
+    )
+
+    updated_folder = update_folder(db=db, folder_id=folder_id, folder=folder_update_schema)
+
+    if image:
+        UPLOAD_DIRECTORY = "/app/static/images"
+        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIRECTORY, image.filename)
+        try:
+            with open(file_path, "wb") as buffer:
+                content = await image.read()
+                buffer.write(content)
+            
+            image_schema = ImageCreate(
+                filename=image.filename,
+                filepath=f"/static_images/{image.filename}",
+                description=f"Image for folder {updated_folder.name}",
+                folder_id=updated_folder.id
+            )
+            crud_create_image(db=db, image=image_schema)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Folder updated, but failed to upload new image: {e}")
+
+    db.refresh(updated_folder)
+    return _post_process_folder_response(updated_folder)
 
 
 @router.delete("/{folder_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a folder by ID")

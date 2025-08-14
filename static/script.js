@@ -387,7 +387,6 @@ function switchModalTab(tabId) {
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
 }
 
-// Event listeners for tab buttons
 tabButtons.forEach(button => {
     button.addEventListener('click', () => {
         switchModalTab(button.dataset.tab);
@@ -451,6 +450,8 @@ async function openAddEditModal(type, data = null) {
     document.getElementById('selectedItemImageName').textContent = 'No file chosen';
     document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
 
+    const tabButtonsContainer = document.getElementById('modal-tab-buttons');
+
     // Determine the correct folder/parent ID to pre-select
     const folderIdToSelect = (type === 'item' && data) ? data.folder_id : currentFolderId;
     const parentIdToSelect = (type === 'folder' && data) ? data.parent_id : currentFolderId;
@@ -463,8 +464,9 @@ async function openAddEditModal(type, data = null) {
         switchModalTab('add-item-form');
         if (data) {
             currentEditingItem = data;
-            modalTitle.textContent = 'Edit Item';
+            modalTitle.textContent = data.name;
             document.getElementById('item-submit-button').textContent = 'Update';
+            tabButtonsContainer.style.display = 'none';
             document.getElementById('modalItemName').value = data.name;
             document.getElementById('modalItemDescription').value = data.description || '';
             document.getElementById('modalItemQuantity').value = data.quantity || '';
@@ -474,23 +476,26 @@ async function openAddEditModal(type, data = null) {
             document.getElementById('modalItemNotes').value = data.notes || '';
         } else {
             currentEditingItem = null;
-            modalTitle.textContent = 'Add New Item';
+            modalTitle.textContent = 'New Item';
             document.getElementById('item-submit-button').textContent = 'Create Item';
+            tabButtonsContainer.style.display = 'flex';
         }
     } else if (type === 'folder') {
         switchModalTab('add-folder-form');
         if (data) {
             currentEditingFolder = data;
-            modalTitle.textContent = 'Edit Folder';
+            modalTitle.textContent = data.name;
             document.getElementById('folder-submit-button').textContent = 'Update';
+            tabButtonsContainer.style.display = 'none';
             document.getElementById('modalFolderName').value = data.name;
             document.getElementById('modalFolderDescription').value = data.description || '';
             document.getElementById('modalFolderNotes').value = data.notes || '';
             document.getElementById('modalFolderTags').value = data.tags || '';
         } else {
             currentEditingFolder = null;
-            modalTitle.textContent = 'Add New Folder';
+            modalTitle.textContent = 'New Folder';
             document.getElementById('folder-submit-button').textContent = 'Create Folder';
+            tabButtonsContainer.style.display = 'flex';
         }
     }
 }

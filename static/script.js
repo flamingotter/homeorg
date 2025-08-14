@@ -1,7 +1,6 @@
 // /static/script.js
 let currentFolderId = null; // Track the current folder ID
 let allItems = []; // Store all items for easy lookup
-let currentView = 'grid'; // Can be 'grid' or 'item-details'
 
 // --- UTILITY FUNCTIONS ---
 function showMessage(message, isError = false) {
@@ -40,7 +39,7 @@ async function displayItems(items) {
         itemCard.className = 'item-card';
         
         const images = await fetch(`/images/?item_id=${item.id}`).then(res => res.json());
-        const imageUrl = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/80x80';
+        const imageUrl = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/60x60';
 
         let displayUnit = item.unit || '';
         const match = displayUnit.match(/\(([^)]+)\)/);
@@ -58,7 +57,7 @@ async function displayItems(items) {
                 <i class="material-icons more-options-button">more_vert</i>
             </div>`;
 
-        itemCard.addEventListener('click', () => displayItemDetails(item));
+        itemCard.addEventListener('click', () => showDetails('item', item.id));
         itemGrid.appendChild(itemCard);
 
         const moreOptionsButton = itemCard.querySelector('.more-options-button');
@@ -85,7 +84,7 @@ async function displayFolders(folders) {
             fetch(`/images/?folder_id=${folder.id}`).then(res => res.json())
         ]);
 
-        const imageUrl = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/80x80';
+        const imageUrl = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/60x60';
 
         folderCard.innerHTML = `
             <img src="${imageUrl}" alt="${folder.name}" class="thumbnail">
@@ -129,7 +128,7 @@ function showOptionsMenu(buttonElement, type, data) {
     `;
 
     menu.innerHTML = originalMenuItems;
-    buttonElement.parentElement.appendChild(menu);
+    buttonElement.closest('.item-card, .folder-card').appendChild(menu);
     menu.style.display = 'block';
 
     menu.addEventListener('click', async (event) => {
@@ -171,27 +170,18 @@ function showOptionsMenu(buttonElement, type, data) {
         }
 
         if (action === 'Clone') {
-            console.log('Cloning action triggered.');
-            console.log('Type:', type);
-            console.log('Data object:', data);
-            if (type === 'item') {
-                console.log('Item folder_id:', data.folder_id);
-            } else if (type === 'folder') {
-                console.log('Folder parent_id:', data.parent_id);
-            }
             try {
                 let url;
                 let options = { method: 'POST' };
 
                 if (type === 'item') {
                     url = `/items/${data.id}/clone`;
-                    // Send the current folder_id as new_folder_id
                     options.headers = { 'Content-Type': 'application/json' };
                     options.body = JSON.stringify({ new_folder_id: data.folder_id });
                 } else { // type === 'folder'
                     url = `/folders/${data.id}/clone`;
-                    options.headers = { 'Content-Type': 'application/json' }; // Add content type header
-                    options.body = JSON.stringify({ new_parent_id: data.parent_id }); // Send parent_id
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify({ new_parent_id: data.parent_id });
                 }
 
                 const response = await fetch(url, options);
@@ -209,21 +199,13 @@ function showOptionsMenu(buttonElement, type, data) {
             return;
         }
 
-        // Handle other actions
         if (action === 'Details') {
-            if (type === 'item') {
-                openAddEditModal(type, data);
-            } else { // type === 'folder'
-                openAddEditModal(type, data);
-            }
+            showDetails(type, data.id);
         }
 
         if (action === 'Move') {
-            console.log('Move action triggered.');
-            console.log('Type:', type);
-            console.log('Data object:', data);
-            openFolderSelectionModal(type, data); // Call the new modal
-            closeAllMenus(); // Close the options menu
+            openFolderSelectionModal(type, data);
+            closeAllMenus();
             return;
         }
 
@@ -237,15 +219,24 @@ function closeAllMenus() {
 }
 
 // --- VIEW & NAVIGATION LOGIC ---
+function showMainGrid() {
+    document.getElementById('items-grid').style.display = 'flex';
+    document.getElementById('details-view').style.display = 'none';
+    document.querySelector('.counts').style.display = 'flex';
+    document.getElementById('add-item-fab').style.display = 'flex';
+    if (currentFolderId === null) {
+        document.getElementById('back-button').style.display = 'none';
+        document.getElementById('home-button').style.display = 'none';
+    } else {
+        document.getElementById('back-button').style.display = 'block';
+        document.getElementById('home-button').style.display = 'block';
+    }
+}
+
 function loadRootView() {
     currentFolderId = null;
-    currentView = 'grid';
-    document.getElementById('back-button').style.display = 'none';
-    document.getElementById('home-button').style.display = 'none';
     document.getElementById('header-title').textContent = "HomeOrg";
-    document.getElementById('items-grid').style.display = 'block';
-    document.getElementById('item-details-view').style.display = 'none';
-    document.querySelector('.counts').style.display = 'flex';
+    showMainGrid();
 
     Promise.all([
         fetch('/folders/').then(res => res.json()),
@@ -268,12 +259,7 @@ async function loadFolderView() {
         loadRootView();
         return;
     }
-    currentView = 'grid';
-    document.getElementById('back-button').style.display = 'block';
-    document.getElementById('home-button').style.display = 'block';
-    document.getElementById('items-grid').style.display = 'block';
-    document.getElementById('item-details-view').style.display = 'none';
-    document.querySelector('.counts').style.display = 'flex';
+    showMainGrid();
 
     try {
         const folder = await fetch(`/folders/${currentFolderId}`).then(res => res.json());
@@ -297,74 +283,81 @@ async function loadFolderView() {
     }
 }
 
+async function showDetails(type, id) {
+    document.getElementById('items-grid').style.display = 'none';
+    document.getElementById('details-view').style.display = 'block';
+    document.querySelector('.counts').style.display = 'none';
+    document.getElementById('add-item-fab').style.display = 'none';
+    document.getElementById('back-button').style.display = 'block';
+    document.getElementById('home-button').style.display = 'block';
+
+    const itemForm = document.getElementById('item-details-form');
+    const folderForm = document.getElementById('folder-details-form');
+    const detailsImage = document.getElementById('details-image');
+
+    itemForm.style.display = 'none';
+    folderForm.style.display = 'none';
+
+    try {
+        const data = await fetch(`/${type}s/${id}`).then(res => res.json());
+        const images = await fetch(`/images/?${type}_id=${id}`).then(res => res.json());
+        
+        detailsImage.src = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/400x400';
+        document.getElementById('header-title').textContent = data.name;
+
+        if (type === 'item') {
+            itemForm.style.display = 'block';
+            document.querySelector('#item-details-form button[type="submit"]').style.display = 'block';
+            console.log('Item form:', itemForm, 'Update button:', document.querySelector('#item-details-form button[type="submit"]'));
+            document.getElementById('detailsItemId').value = data.id;
+            document.getElementById('detailsItemName').value = data.name;
+            document.getElementById('detailsItemDescription').value = data.description || '';
+            document.getElementById('detailsItemQuantity').value = data.quantity || '';
+            await populateUnitDropdown('detailsItemUnit', data.unit);
+            document.getElementById('detailsItemTags').value = data.tags || '';
+            document.getElementById('detailsItemAcquiredDate').value = data.acquired_date || '';
+            document.getElementById('detailsItemNotes').value = data.notes || '';
+            await populateFolderDropdown('detailsItemFolderId', data.folder_id);
+        } else { // folder
+            folderForm.style.display = 'block';
+            document.querySelector('#folder-details-form button[type="submit"]').style.display = 'block';
+            console.log('Folder form:', folderForm, 'Update button:', document.querySelector('#folder-details-form button[type="submit"]'));
+            document.getElementById('detailsFolderId').value = data.id;
+            document.getElementById('detailsFolderName').value = data.name;
+            document.getElementById('detailsFolderDescription').value = data.description || '';
+            document.getElementById('detailsFolderNotes').value = data.notes || '';
+            document.getElementById('detailsFolderTags').value = data.tags || '';
+            await populateFolderDropdown('detailsFolderParentId', data.parent_id);
+        }
+    } catch (error) {
+        console.error(`Error fetching details for ${type} ${id}:`, error);
+        showMessage('Failed to load details.', true);
+        showMainGrid();
+    }
+}
+
 // --- INITIALIZATION & GLOBAL LISTENERS ---
 document.addEventListener('DOMContentLoaded', loadRootView);
 document.addEventListener('click', (event) => {
-    // Close menus if clicking anywhere else on the page
     if (!event.target.closest('.options-menu') && !event.target.classList.contains('more-options-button')) {
         closeAllMenus();
     }
 });
 
-async function displayItemDetails(item) {
-    currentView = 'item-details';
-    document.getElementById('header-title').textContent = item.name;
-    document.getElementById('item-details-description').textContent = item.description || 'N/A';
-    document.getElementById('item-details-quantity').textContent = `${item.quantity || 0} ${item.unit || ''}`;
-    document.getElementById('item-details-date').textContent = item.acquired_date || 'N/A';
-    document.getElementById('item-details-tags').textContent = item.tags || 'N/A';
-    document.getElementById('item-details-notes').textContent = item.notes || 'N/A';
-
-    const imageContainer = document.getElementById('item-details-image-container');
-    imageContainer.innerHTML = '';
-
-    try {
-        const images = await fetch(`/images/?item_id=${item.id}`).then(res => res.json());
-        if (images && images.length > 0) {
-            images.forEach(image => {
-                const img = document.createElement('img');
-                img.src = `/static_images/${image.filename}`;
-                img.alt = item.name;
-                imageContainer.appendChild(img);
-            });
-        } else {
-            imageContainer.innerHTML = '<img src="https://placehold.co/150x150/cccccc/333333?text=No+Image" alt="Placeholder">';
-        }
-    } catch (error) {
-        console.error('Error fetching item images:', error);
-        imageContainer.innerHTML = '<img src="https://placehold.co/150x150/cccccc/333333?text=Error" alt="Error">';
-    }
-
-    document.getElementById('items-grid').style.display = 'none';
-    document.getElementById('item-details-view').style.display = 'block';
-    document.getElementById('back-button').style.display = 'block';
-    document.getElementById('home-button').style.display = 'block';
-    document.querySelector('.counts').style.display = 'none';
-}
-
 document.getElementById('back-button').addEventListener('click', async () => {
-    if (currentView === 'item-details') {
+    if (document.getElementById('details-view').style.display === 'block') {
+        showMainGrid();
         loadFolderView();
-    } else if (currentFolderId) {
-        try {
-            const response = await fetch(`/folders/${currentFolderId}/parent`);
-            if (response.ok) {
-                const data = await response.json();
-                currentFolderId = data ? data.id : null;
-            } else {
-                currentFolderId = null;
-            }
-            loadFolderView();
-        } catch (error) {
-            console.error('Error going back:', error);
-            loadRootView();
-        }
+    } else if (currentFolderId !== null) {
+        const parentFolder = await fetch(`/folders/${currentFolderId}`).then(res => res.json());
+        currentFolderId = parentFolder.parent_id;
+        loadFolderView();
     }
 });
 
 document.getElementById('home-button').addEventListener('click', loadRootView);
 
-// --- MODAL HANDLING ---
+// --- MODAL & FORM HANDLING ---
 const addEditModal = document.getElementById('add-edit-modal');
 const modalTitle = document.getElementById('modal-title');
 const closeAddEditModalButton = addEditModal.querySelector('.close-button');
@@ -375,10 +368,6 @@ const tabContents = document.querySelectorAll('.tab-content');
 const addFolderForm = document.getElementById('add-folder-form');
 const addItemForm = document.getElementById('add-item-form');
 
-let currentEditingItem = null;
-let currentEditingFolder = null;
-
-// Function to switch tabs within the modal
 function switchModalTab(tabId) {
     tabContents.forEach(content => {
         content.style.display = 'none';
@@ -402,7 +391,7 @@ tabButtons.forEach(button => {
 async function populateFolderDropdown(elementId, selectedId = null) {
     const dropdown = document.getElementById(elementId);
     if (!dropdown) return;
-    dropdown.innerHTML = ''; // Clear existing options
+    dropdown.innerHTML = '';
 
     try {
         const response = await fetch('/folders/');
@@ -448,187 +437,132 @@ async function populateFolderDropdown(elementId, selectedId = null) {
     }
 }
 
-// Function to open the Add/Edit Modal
-async function openAddEditModal(type, data = null) {
+function openAddModal(type) {
     addEditModal.style.display = 'block';
     addFolderForm.reset();
     addItemForm.reset();
     document.getElementById('selectedItemImageName').textContent = 'No file chosen';
     document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
 
-    const tabButtonsContainer = document.getElementById('modal-tab-buttons');
-
-    // Determine the correct folder/parent ID to pre-select
-    const folderIdToSelect = (type === 'item' && data) ? data.folder_id : currentFolderId;
-    const parentIdToSelect = (type === 'folder' && data) ? data.parent_id : currentFolderId;
-
-    // Populate both dropdowns
-    await populateFolderDropdown('modalItemFolderId', folderIdToSelect);
-    await populateFolderDropdown('modalFolderParentId', parentIdToSelect);
+    populateFolderDropdown('modalItemFolderId', currentFolderId);
+    populateFolderDropdown('modalFolderParentId', currentFolderId);
+    populateUnitDropdown('modalItemUnit');
 
     if (type === 'item') {
-        populateUnitDropdown();
+        modalTitle.textContent = 'New Item';
         switchModalTab('add-item-form');
-        if (data) {
-            currentEditingItem = data;
-            modalTitle.textContent = data.name;
-            document.getElementById('item-submit-button').textContent = 'Update';
-            tabButtonsContainer.style.display = 'none';
-            document.getElementById('modalItemName').value = data.name;
-            document.getElementById('modalItemDescription').value = data.description || '';
-            document.getElementById('modalItemQuantity').value = data.quantity || '';
-            document.getElementById('modalItemUnit').value = data.unit || '';
-            document.getElementById('modalItemTags').value = data.tags || '';
-            document.getElementById('modalItemAcquiredDate').value = data.acquired_date || '';
-            document.getElementById('modalItemNotes').value = data.notes || '';
-        } else {
-            currentEditingItem = null;
-            modalTitle.textContent = 'New Item';
-            document.getElementById('item-submit-button').textContent = 'Create Item';
-            tabButtonsContainer.style.display = 'flex';
-        }
-    } else if (type === 'folder') {
+    } else {
+        modalTitle.textContent = 'New Folder';
         switchModalTab('add-folder-form');
-        if (data) {
-            currentEditingFolder = data;
-            modalTitle.textContent = data.name;
-            document.getElementById('folder-submit-button').textContent = 'Update';
-            tabButtonsContainer.style.display = 'none';
-            document.getElementById('modalFolderName').value = data.name;
-            document.getElementById('modalFolderDescription').value = data.description || '';
-            document.getElementById('modalFolderNotes').value = data.notes || '';
-            document.getElementById('modalFolderTags').value = data.tags || '';
-        } else {
-            currentEditingFolder = null;
-            modalTitle.textContent = 'New Folder';
-            document.getElementById('folder-submit-button').textContent = 'Create Folder';
-            tabButtonsContainer.style.display = 'flex';
-        }
     }
 }
 
-// Function to close the Add/Edit Modal
 function closeAddEditModal() {
     addEditModal.style.display = 'none';
-    addFolderForm.reset();
-    addItemForm.reset();
-    currentEditingItem = null;
-    currentEditingFolder = null;
-    document.getElementById('modalItemImageFile').value = ''; // Clear file input
-    document.getElementById('modalFolderImageFile').value = ''; // Clear file input
-    document.getElementById('modalItemCameraFile').value = ''; // Clear file input
-    document.getElementById('modalFolderCameraFile').value = ''; // Clear file input
-    document.getElementById('selectedItemImageName').textContent = 'No file chosen';
-    document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
 }
 
-// Event Listeners for Modal Close
 closeAddEditModalButton.addEventListener('click', closeAddEditModal);
-window.addEventListener('click', (event) => {
-    if (event.target === addEditModal) {
-        closeAddEditModal();
-    }
-});
 
-// Handle Add Item FAB click
-document.getElementById('add-item-fab').addEventListener('click', () => openAddEditModal('item'));
+document.getElementById('add-item-fab').addEventListener('click', () => openAddModal('item'));
 
-// Handle Folder Form Submission
 addFolderForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-
-    const formData = new FormData();
-    formData.append('name', document.getElementById('modalFolderName').value);
-    formData.append('description', document.getElementById('modalFolderDescription').value);
-    formData.append('notes', document.getElementById('modalFolderNotes').value);
-    formData.append('tags', document.getElementById('modalFolderTags').value);
+    const formData = new FormData(addFolderForm);
     const parentIdValue = document.getElementById('modalFolderParentId').value;
     if (parentIdValue) {
         formData.append('parent_id', parentIdValue);
     }
 
-    const folderImageFile = document.getElementById('modalFolderImageFile').files[0] || document.getElementById('modalFolderCameraFile').files[0];
-    if (folderImageFile) {
-        formData.append('image', folderImageFile);
-    }
-
-    let url = '/folders/';
-    let method = 'POST';
-
-    if (currentEditingFolder) {
-        url = `/folders/${currentEditingFolder.id}`;
-        method = 'PUT';
-    }
-
     try {
-        const response = await fetch(url, {
-            method: method,
-            body: formData // FormData handles Content-Type automatically
+        const response = await fetch('/folders/', {
+            method: 'POST',
+            body: formData
         });
-
         if (response.ok) {
-            showMessage(`Folder ${currentEditingFolder ? 'updated' : 'added'} successfully!`);
+            showMessage('Folder added successfully!');
             closeAddEditModal();
             loadFolderView();
         } else {
-            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            showMessage(`Failed to save folder: ${error.detail}`, true);
+            const error = await response.json();
+            showMessage(`Failed to add folder: ${error.detail}`, true);
         }
     } catch (error) {
         showMessage(`An error occurred: ${error.message}`, true);
     }
 });
 
-// Handle Item Form Submission
 addItemForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-
-    const formData = new FormData();
-    formData.append('name', document.getElementById('modalItemName').value);
-    formData.append('description', document.getElementById('modalItemDescription').value);
-    formData.append('quantity', document.getElementById('modalItemQuantity').value);
-    formData.append('unit', document.getElementById('modalItemUnit').value);
-    formData.append('tags', document.getElementById('modalItemTags').value);
-    formData.append('acquired_date', document.getElementById('modalItemAcquiredDate').value);
-    formData.append('notes', document.getElementById('modalItemNotes').value);
+    const formData = new FormData(addItemForm);
     const folderIdValue = document.getElementById('modalItemFolderId').value;
     if (folderIdValue) {
         formData.append('folder_id', folderIdValue);
     }
 
-    const itemImageFile = document.getElementById('modalItemImageFile').files[0] || document.getElementById('modalItemCameraFile').files[0];
-    if (itemImageFile) {
-        formData.append('image', itemImageFile);
-    }
-
-    let url = '/items/';
-    let method = 'POST';
-
-    if (currentEditingItem) {
-        url = `/items/${currentEditingItem.id}`;
-        method = 'PUT';
-    }
-
     try {
-        const response = await fetch(url, {
-            method: method,
-            body: formData // FormData handles Content-Type automatically
+        const response = await fetch('/items/', {
+            method: 'POST',
+            body: formData
         });
-
         if (response.ok) {
-            showMessage(`Item ${currentEditingItem ? 'updated' : 'added'} successfully!`);
+            showMessage('Item added successfully!');
             closeAddEditModal();
             loadFolderView();
         } else {
-            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            showMessage(`Failed to save item: ${error.detail}`, true);
+            const error = await response.json();
+            showMessage(`Failed to add item: ${error.detail}`, true);
         }
     } catch (error) {
         showMessage(`An error occurred: ${error.message}`, true);
     }
 });
 
-// Image File Input Change Listeners (for displaying selected file name)
+document.getElementById('item-details-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const itemId = document.getElementById('detailsItemId').value;
+    const formData = new FormData(event.target);
+    try {
+        const response = await fetch(`/items/${itemId}`, {
+            method: 'PUT',
+            body: formData
+        });
+        if (response.ok) {
+            showMessage('Item updated successfully!');
+            showMainGrid();
+            loadFolderView();
+        } else {
+            const error = await response.json();
+            showMessage(`Failed to update item: ${error.detail}`, true);
+        }
+    } catch (error) {
+        showMessage(`An error occurred: ${error.message}`, true);
+    }
+});
+
+document.getElementById('folder-details-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const folderId = document.getElementById('detailsFolderId').value;
+    const formData = new FormData(event.target);
+    try {
+        const response = await fetch(`/folders/${folderId}`, {
+            method: 'PUT',
+            body: formData
+        });
+        if (response.ok) {
+            showMessage('Folder updated successfully!');
+            showMainGrid();
+            loadFolderView();
+        } else {
+            const error = await response.json();
+            showMessage(`Failed to update folder: ${error.detail}`, true);
+        }
+    } catch (error) {
+        showMessage(`An error occurred: ${error.message}`, true);
+    }
+});
+
+
+// Image File Input Change Listeners
 document.getElementById('modalFolderImageFile').addEventListener('change', function() {
     document.getElementById('selectedFolderImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
 });
@@ -642,29 +576,14 @@ document.getElementById('modalItemCameraFile').addEventListener('change', functi
     document.getElementById('selectedItemImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
 });
 
-// "Take Photo" and "Choose File" button listeners to trigger hidden file inputs
-document.getElementById('takeFolderPhotoButton').addEventListener('click', () => {
-    document.getElementById('modalFolderCameraFile').click();
-});
-document.getElementById('chooseFolderFileButton').addEventListener('click', () => {
-    document.getElementById('modalFolderImageFile').click();
-});
-document.getElementById('takeItemPhotoButton').addEventListener('click', () => {
-    document.getElementById('modalItemCameraFile').click();
-});
-document.getElementById('chooseItemFileButton').addEventListener('click', () => {
-    document.getElementById('modalItemImageFile').click();
-});
+document.getElementById('takeFolderPhotoButton').addEventListener('click', () => document.getElementById('modalFolderCameraFile').click());
+document.getElementById('chooseFolderFileButton').addEventListener('click', () => document.getElementById('modalFolderImageFile').click());
+document.getElementById('takeItemPhotoButton').addEventListener('click', () => document.getElementById('modalItemCameraFile').click());
+document.getElementById('chooseItemFileButton').addEventListener('click', () => document.getElementById('modalItemImageFile').click());
 
-
-
-// Populate Unit dropdown for Item Form
-async function populateUnitDropdown() {
-    const unitSelect = document.getElementById('modalItemUnit');
-    // Clear existing options
+async function populateUnitDropdown(elementId, selectedUnit = '') {
+    const unitSelect = document.getElementById(elementId);
     unitSelect.innerHTML = '<option value="">Select Unit</option>';
-
-    // Example units - replace with API call if units are dynamic
     const units = [
         'Each (Ea)', 'Piece (Pc)', 'Unit (Un)', 'Pair (Pr)', 'Set', 'Dozen (Dz)', 'Gross (Gr)', 
         'Bag (Bg)', 'Bale', 'Barrel (Bbl)', 'Bottle (Bt)', 'Box (Bx)', 'Bundle (Bdl)', 'Can', 
@@ -675,59 +594,69 @@ async function populateUnitDropdown() {
         'Cubic Foot (cu ft)', 'Cubic Meter (cu m)', 'Foot (ft)', 'Inch (in)', 'Yard (yd)', 
         'Meter (m)', 'Centimeter (cm)', 'Millimeter (mm)'
     ];
-
     units.forEach(unit => {
         const option = document.createElement('option');
         option.value = unit;
         option.textContent = unit;
         unitSelect.appendChild(option);
     });
+    if (selectedUnit) {
+        unitSelect.value = selectedUnit;
+    }
 }
 
-// Global variables for folder selection
-let currentMoveType = null; // 'item' or 'folder'
-let currentMoveData = null; // The item or folder object being moved
-let selectedFolderId = null; // The ID of the folder selected in the modal
+let currentMoveType = null;
+let currentMoveData = null;
+let selectedFolderId = null;
 
-// --- Folder Selection Modal Functions ---
 function openFolderSelectionModal(type, data) {
     currentMoveType = type;
     currentMoveData = data;
-    selectedFolderId = null; // Reset selection
+    selectedFolderId = null;
     document.getElementById('folder-selection-modal').style.display = 'block';
-    loadFolderTree(); // Call to load the folder tree
+    loadFolderTree();
 }
 
 function closeFolderSelectionModal() {
     document.getElementById('folder-selection-modal').style.display = 'none';
-    document.getElementById('folder-tree-container').innerHTML = ''; // Clear tree
-    selectedFolderId = null; // Clear selection
+    document.getElementById('folder-tree-container').innerHTML = '';
+    selectedFolderId = null;
 }
 
 async function loadFolderTree() {
     const folderTreeContainer = document.getElementById('folder-tree-container');
-    folderTreeContainer.innerHTML = '<div class="loading">Loading folders...</div>'; // Loading indicator
+    folderTreeContainer.innerHTML = '<div class="loading">Loading folders...</div>';
 
     try {
-        const rootFolders = await fetch('/folders/').then(res => res.json());
-        folderTreeContainer.innerHTML = ''; // Clear loading indicator
+        const folders = await fetch('/folders/').then(res => res.json());
+        folderTreeContainer.innerHTML = '';
 
-        // Option to select root
         const rootOption = document.createElement('div');
         rootOption.className = 'folder-node root-node';
         rootOption.textContent = 'Root Folder (No Parent)';
-        rootOption.dataset.folderId = 'null'; // Use 'null' string for root
+        rootOption.dataset.folderId = 'null';
         rootOption.addEventListener('click', () => {
             selectFolderNode(null, rootOption);
         });
         folderTreeContainer.appendChild(rootOption);
 
-        for (const folder of rootFolders) {
-            // Only display top-level folders that are actual root folders (parent_id is null)
-            if (folder.parent_id === null) {
-                renderFolderNode(folder, folderTreeContainer, 0);
+        const foldersById = folders.reduce((acc, f) => {
+            acc[f.id] = { ...f, children: [] };
+            return acc;
+        }, {});
+
+        const rootFolders = [];
+        folders.forEach(f => {
+            if (f.parent_id && foldersById[f.parent_id]) {
+                foldersById[f.parent_id].children.push(foldersById[f.id]);
+            } else if (f.parent_id === null) {
+                rootFolders.push(foldersById[f.id]);
             }
-        }
+        });
+
+        rootFolders.sort((a, b) => a.name.localeCompare(b.name));
+        rootFolders.forEach(f => renderFolderNode(f, folderTreeContainer, 0, foldersById));
+
     } catch (error) {
         console.error('Error loading folder tree:', error);
         showMessage('Failed to load folders for selection.', true);
@@ -735,48 +664,39 @@ async function loadFolderTree() {
     }
 }
 
-function renderFolderNode(folder, parentElement, level) {
+function renderFolderNode(folder, parentElement, level, foldersById) {
     const folderNode = document.createElement('div');
     folderNode.className = 'folder-node';
     folderNode.dataset.folderId = folder.id;
-    folderNode.style.paddingLeft = `${level * 20}px`; // Indent subfolders
+    folderNode.style.paddingLeft = `${level * 20}px`;
 
     const folderName = document.createElement('span');
     folderName.textContent = folder.name;
     folderNode.appendChild(folderName);
 
-    // Add click listener for selection
     folderNode.addEventListener('click', (event) => {
-        event.stopPropagation(); // Prevent parent clicks
+        event.stopPropagation();
         selectFolderNode(folder.id, folderNode);
     });
 
     parentElement.appendChild(folderNode);
 
-    // Recursively render subfolders
-    if (folder.subfolders && folder.subfolders.length > 0) {
-        for (const subfolder of folder.subfolders) {
-            renderFolderNode(subfolder, parentElement, level + 1);
-        }
-    }
+    const children = foldersById[folder.id]?.children || [];
+    children.sort((a, b) => a.name.localeCompare(b.name));
+    children.forEach(child => renderFolderNode(child, parentElement, level + 1, foldersById));
 }
 
 function selectFolderNode(folderId, element) {
-    // Remove 'selected' class from previously selected node
     const previouslySelected = document.querySelector('.folder-node.selected');
     if (previouslySelected) {
         previouslySelected.classList.remove('selected');
     }
-
-    // Add 'selected' class to the new node
     if (element) {
         element.classList.add('selected');
     }
     selectedFolderId = folderId;
-    console.log('Selected Folder ID:', selectedFolderId);
 }
 
-// Event listeners for the new modal's close button
 document.getElementById('close-folder-selection-modal').addEventListener('click', closeFolderSelectionModal);
 window.addEventListener('click', (event) => {
     if (event.target === document.getElementById('folder-selection-modal')) {
@@ -784,7 +704,6 @@ window.addEventListener('click', (event) => {
     }
 });
 
-// Event listener for the "Select Folder" button
 document.getElementById('select-folder-button').addEventListener('click', async () => {
     if (selectedFolderId === undefined) {
         showMessage('Please select a destination folder.', true);
@@ -812,7 +731,7 @@ document.getElementById('select-folder-button').addEventListener('click', async 
         if (response.ok) {
             showMessage(`${currentMoveType.charAt(0).toUpperCase() + currentMoveType.slice(1)} moved successfully.`);
             closeFolderSelectionModal();
-            loadFolderView(); // Refresh the view
+            loadFolderView();
         } else {
             const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
             showMessage(`Error moving: ${error.detail}`, true);
@@ -822,8 +741,17 @@ document.getElementById('select-folder-button').addEventListener('click', async 
     }
 });
 
-// Event listener for the "Move to Root" button
 document.getElementById('select-root-button').addEventListener('click', async () => {
-    selectedFolderId = null; // Explicitly set to null for root
-    document.getElementById('select-folder-button').click(); // Trigger the move
+    selectedFolderId = null;
+    document.getElementById('select-folder-button').click();
 });
+
+// --- SEARCH & FILTER ---
+document.querySelector('.search-icon').addEventListener('click', () => {
+    showMessage('Search functionality coming soon!');
+});
+
+document.querySelector('.filter-icon').addEventListener('click', () => {
+    showMessage('Filter functionality coming soon!');
+});
+// --- END OF SCRIPT ---

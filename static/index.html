@@ -41,24 +41,68 @@
             <div id="item-grid"></div>
         </div>
 
-        <!-- Item Details View -->
-        <div id="item-details-view" style="display: none;">
-            <div id="item-details-content">
-                <div id="item-details-image-container" class="image-gallery">
-                    <!-- Images will be loaded here -->
-                </div>
-                <div class="detail-row"><strong>Description:</strong> <span id="item-details-description"></span></div>
-                <div class="detail-row"><strong>Quantity:</strong> <span id="item-details-quantity"></span></div>
-                <div class="detail-row"><strong>Date Acquired:</strong> <span id="item-details-date"></span></div>
-                <div class="detail-row"><strong>Tags:</strong> <span id="item-details-tags"></span></div>
-                <div class="detail-row"><strong>Notes:</strong> <span id="item-details-notes"></span></div>
-            </div>
-        </div>
+        
 
         <!-- Floating Action Button for Add -->
         <button id="add-item-fab">
             <i class="material-icons">add</i>
         </button>
+
+        <!-- Details View -->
+        <div id="details-view" style="display: none;">
+            <img id="details-image" class="details-image" src="" alt="Detail image">
+            
+            <!-- Folder Form -->
+            <form id="folder-details-form" style="display: none;">
+                <input type="hidden" id="detailsFolderId">
+                <label for="detailsFolderName">Folder Name:</label>
+                <input type="text" id="detailsFolderName" required>
+
+                <label for="detailsFolderDescription">Description:</label>
+                <textarea id="detailsFolderDescription"></textarea>
+
+                <label for="detailsFolderNotes">Notes:</label>
+                <textarea id="detailsFolderNotes"></textarea>
+
+                <label for="detailsFolderTags">Tags (comma-separated):</label>
+                <input type="text" id="detailsFolderTags">
+
+                <label for="detailsFolderParentId">Parent Folder:</label>
+                <select id="detailsFolderParentId"></select>
+
+                <button type="submit" class="btn-primary">Update Folder</button>
+            </form>
+
+            <!-- Item Form -->
+            <form id="item-details-form" style="display: none;">
+                <input type="hidden" id="detailsItemId">
+                <label for="detailsItemName">Item Name:</label>
+                <input type="text" id="detailsItemName" required>
+
+                <label for="detailsItemDescription">Description:</label>
+                <textarea id="detailsItemDescription"></textarea>
+
+                <label for="detailsItemQuantity">Quantity:</label>
+                <input type="number" id="detailsItemQuantity" value="1" required>
+
+                <label for="detailsItemUnit">Unit:</label>
+                <select id="detailsItemUnit"></select>
+
+                <label for="detailsItemTags">Tags (comma-separated):</label>
+                <input type="text" id="detailsItemTags">
+
+                <label for="detailsItemAcquiredDate">Acquired Date:</label>
+                <input type="date" id="detailsItemAcquiredDate">
+
+                <label for="detailsItemNotes">Notes:</label>
+                <textarea id="detailsItemNotes"></textarea>
+
+                <label for="detailsItemFolderId">Folder:</label>
+                <select id="detailsItemFolderId"></select>
+
+                <button type="submit" class="btn-primary">Update Item</button>
+            </form>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -73,86 +117,6 @@
             <i class="material-icons">menu</i> Menu
         </a>
     </nav>
-
-    <!-- Add/Edit Item/Folder Modal -->
-    <div id="add-edit-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="modal-title">Add New Entry</h2>
-
-            <div id="modal-tab-buttons" class="tab-buttons">
-                <button class="tab-button active" data-tab="add-folder-form">Add Folder</button>
-                <button class="tab-button" data-tab="add-item-form">Add Item</button>
-            </div>
-
-            <!-- Add Folder Form -->
-            <form id="add-folder-form" class="tab-content active">
-                <label for="modalFolderName">Folder Name:</label>
-                <input type="text" id="modalFolderName" required>
-
-                <label for="modalFolderDescription">Description:</label>
-                <textarea id="modalFolderDescription"></textarea>
-
-                <label for="modalFolderNotes">Notes:</label>
-                <textarea id="modalFolderNotes"></textarea>
-
-                <label for="modalFolderTags">Tags (comma-separated):</label>
-                <input type="text" id="modalFolderTags">
-
-                <label>Folder Image:</label>
-                <div class="image-upload-controls">
-                    <button type="button" id="takeFolderPhotoButton" class="btn-secondary">Take Photo</button>
-                    <button type="button" id="chooseFolderFileButton" class="btn-secondary">Choose File</button>
-                    <input type="file" id="modalFolderImageFile" accept="image/*" style="display: none;">
-                    <input type="file" id="modalFolderCameraFile" accept="image/*" capture="camera" style="display: none;">
-                    <span id="selectedFolderImageName" class="file-name-display">No file chosen</span>
-                </div>
-
-                <label for="modalFolderParentId">Parent Folder:</label>
-                <select id="modalFolderParentId"></select>
-
-                <button type="submit" id="folder-submit-button" class="btn-primary">Create Folder</button>
-            </form>
-
-            <!-- Add Item Form -->
-            <form id="add-item-form" class="tab-content" style="display: none;">
-                <label for="modalItemName">Item Name:</label>
-                <input type="text" id="modalItemName" required>
-
-                <label for="modalItemDescription">Description:</label>
-                <textarea id="modalItemDescription"></textarea>
-
-                <label for="modalItemQuantity">Quantity:</label>
-                <input type="number" id="modalItemQuantity" value="1" required>
-
-                <label for="modalItemUnit">Unit:</label>
-                <select id="modalItemUnit"></select>
-
-                <label for="modalItemTags">Tags (comma-separated):</label>
-                <input type="text" id="modalItemTags">
-
-                <label for="modalItemAcquiredDate">Acquired Date:</label>
-                <input type="date" id="modalItemAcquiredDate">
-
-                <label for="modalItemNotes">Notes:</label>
-                <textarea id="modalItemNotes"></textarea>
-
-                <label>Item Image:</label>
-                <div class="image-upload-controls">
-                    <button type="button" id="takeItemPhotoButton" class="btn-secondary">Take Photo</button>
-                    <button type="button" id="chooseItemFileButton" class="btn-secondary">Choose File</button>
-                    <input type="file" id="modalItemImageFile" accept="image/*" style="display: none;">
-                    <input type="file" id="modalItemCameraFile" accept="image/*" capture="camera" style="display: none;">
-                    <span id="selectedItemImageName" class="file-name-display">No file chosen</span>
-                </div>
-
-                <label for="modalItemFolderId">Folder:</label>
-                <select id="modalItemFolderId"></select>
-
-                <button type="submit" id="item-submit-button" class="btn-primary">Create Item</button>
-            </form>
-        </div>
-    </div>
 
     <!-- Custom Message Box -->
     <div class="message-box" id="messageBox" style="display: none;"></div>

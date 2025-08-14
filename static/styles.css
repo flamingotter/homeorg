@@ -1,443 +1,363 @@
-/* /static/styles.css */
-/* General Styles */
+/* styles.css */
+
+/* General Body & Typography */
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    font-size: 16px;
-    line-height: 1.5;
-    background-color: #333;
-    color: #fff;
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light text */
 }
 
 .container {
-    max-width: 100%;
-    margin: 0;
+    padding: 16px;
+    padding-bottom: 80px; /* Adjusted space for bottom nav and button */
 }
 
+/* Header */
 header {
-    background-color: #444;
-    padding: 10px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-}
-
-.header-navigation {
-    display: flex;
     align-items: center;
-    margin-right: 10px;
+    padding: 8px 16px;
+    background-color: #1e1e1e; /* Darker header */
+    border-bottom: 1px solid #333;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 #header-title {
-    font-size: 1.2em;
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
-.header-icons {
+.header-navigation, .header-icons {
     display: flex;
     align-items: center;
+    gap: 16px;
 }
 
-.header-icons i {
-    margin-left: 10px;
-}
-
-#back-button {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    margin-right: 20px;
-}
-
-#back-button i.material-icons {
-    font-size: 24px;
-}
-
-#home-button {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-#home-button i.material-icons {
-    font-size: 24px;
-}
-
-/* Counts Styles */
+/* Counts Section */
 .counts {
     display: flex;
     justify-content: space-around;
-    padding: 10px 0;
-    font-size: 1em;
+    padding: 12px;
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333;
+    font-size: 0.9rem;
+    color: #b0b0b0;
 }
 
-/* Item Grid and Folder Grid Styles */
-/* Item Grid Styles */
+/* Grids */
 #items-grid {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 100%;
-    padding-bottom: 80px; /* Add padding to the bottom */
+    margin-top: 16px;
 }
 
-/* Folder Grid Styles */
-#folder-grid {
+#folder-grid, #item-grid {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 100%;
 }
 
-/* Item Grid (Within a Folder) Styles */
-#item-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-.folder-card,
-.item-card {
-    border: 1px solid #555;
-    border-radius: 5px;
-    padding: 10px;
-    background-color: #444;
-    width: 100%;
-    box-sizing: border-box;
+/* List Cards (Folders & Items) */
+.folder-card, .item-card {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
     display: flex;
     align-items: center;
-    /* margin-bottom: 10px; */
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.folder-card:hover, .item-card:hover {
+    background-color: #2a2a2a;
 }
 
 .thumbnail {
-    width: 80px;
-    height: 80px;
-    margin-right: 10px;
+    width: 60px;
+    height: 60px;
     object-fit: cover;
-    object-position: top center;
+    border-radius: 8px;
+    margin-right: 16px;
 }
 
-.folder-details,
-.item-details {
+.folder-details, .item-details {
     flex-grow: 1;
 }
 
-.folder-title,
-.item-title {
-    font-size: 1.1em;
-    margin-bottom: 5px;
+.folder-title, .item-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
 }
 
-.folder-info,
-.item-info {
-    font-size: 0.9em;
-}
-
-.folder-info i.material-icons.folder-icon { /* Target the specific folder icon */
-    font-size: 1.2em; /* Reduce the size */
-    vertical-align: middle; /* Adjust vertical alignment if needed */
-    margin-right: 3px; /* Add a little spacing to the right of the icon */
-}
-
-.folder-actions,
-.item-actions {
-    text-align: right;
-    position: relative; /* Add relative positioning */
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-/* Bottom Navigation Styles */
-.bottom-nav {
-    display: flex;
-    justify-content: space-around;
-    background-color: #444;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 10px 0;
-}
-
-.bottom-nav a {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-decoration: none;
-    color: #fff;
-}
-
-/* Add Item FAB Styles */
-#add-item-fab {
-    position: fixed;
-    bottom: 80px;
-    right: 60px;
-    padding: 15px;
-    border-radius: 50%;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    font-size: 1.5em; /* Adjusted for better visibility */
-    display: flex; /* Use flex to center the icon */
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    z-index: 100; /* Ensure it's above other content */
-}
-
-/* Item Details View Styles */
-#item-details-view {
-    padding: 10px;
-    display: none; /* Hidden by default */
-}
-
-#item-details-view header {
-    background-color: #444;
-    padding: 10px;
+.folder-info, .item-info {
+    font-size: 0.9rem;
+    color: #b0b0b0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
 }
 
-#item-details-view .header-icons i {
-    margin-left: 10px;
+.folder-icon {
+    font-size: 1rem;
+    margin-right: 4px;
 }
 
-#item-details-image-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 15px;
-    justify-content: center; /* Center images */
-}
-
-#item-details-image-container img {
-    max-width: 150px; /* Adjust size as needed */
-    max-height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-}
-
-.detail-row {
-    margin-bottom: 8px;
-    font-size: 1em;
-}
-
-.detail-row strong {
-    color: #a0aec0; /* A lighter gray for labels */
-}
-
-
-/* Media Query for Desktop Styles */
-@media (min-width: 768px) {
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-}
-
-/* options menu styles */
-.options-menu {
+/* Actions & Menus */
+.item-actions, .folder-actions {
     position: absolute;
-    background-color: #555;
-    border: 1px solid #777;
-    border-radius: 5px;
-    padding: 5px;
-    display: none;
-    z-index: 10;
-    right: 0; /* Align to the right edge of folder-actions */
-    top: 100%; /* Position below the button */
-    transform: translateY(5px); /* Add a small offset */
-}
-
-.options-menu .menu-item {
-    padding: 10px 15px;
-    cursor: pointer;
-    white-space: nowrap; /* Prevent text wrapping */
-}
-
-.options-menu .menu-item:hover {
-    background-color: #666;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    padding: 4px;
 }
 
 .more-options-button {
+    color: #b0b0b0;
+}
+
+.options-menu {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #2c2c2c;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+    z-index: 1001;
+}
+
+#back-button {
     cursor: pointer;
+}
+
+.menu-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+}
+
+.menu-item:hover {
+    background-color: #3a3a3a;
 }
 
 .menu-item-header {
     font-weight: bold;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #777;
-    margin-bottom: 5px;
+    background-color: #3a3a3a;
 }
 
 .menu-item-confirm-yes {
-    color: #ff4d4d;
+    color: #6eb5ff;
 }
 
 .menu-item-confirm-no {
-    color: #ccc;
+    color: #ff7b7b;
 }
 
-/* Modal Styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 200; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
-    padding-top: 60px; /* Location of the box */
+/* Details View */
+#details-view {
+    padding: 16px;
 }
 
-.modal-content {
-    background-color: #444;
-    margin: 5% auto; /* 5% from the top and centered */
-    padding: 20px;
-    border: 1px solid #777;
-    border-radius: 10px;
-    width: 90%; /* Could be more responsive */
-    max-width: 500px; /* Max width for larger screens */
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+#item-details-form, #folder-details-form {
+    /* No debugging styles */
 }
 
-.close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.modal h2 {
-    color: #fff;
-    margin-top: 0;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.modal label {
-    color: #ccc;
-    margin-bottom: 5px;
-    font-weight: normal; /* Override default label bold */
-}
-
-.modal input[type="text"],
-.modal input[type="number"],
-.modal input[type="date"],
-.modal textarea,
-.modal select {
-    background-color: #333;
-    border: 1px solid #666;
-    color: #eee;
-    padding: 10px;
-    border-radius: 5px;
-    width: calc(100% - 22px); /* Account for padding and border */
-    margin-bottom: 15px;
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-}
-
-.modal input[type="text"]:focus,
-.modal input[type="number"]:focus,
-.modal input[type="date"]:focus,
-.modal textarea:focus,
-.modal select:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.modal .btn-primary {
-    display: block;
+#details-view img.details-image {
     width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    background-color: #007bff;
-    color: white;
+    max-width: 400px;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* FAB */
+#add-item-fab {
+    position: fixed;
+    bottom: 76px; /* Above bottom nav */
+    right: 16px;
+    background-color: #6eb5ff;
+    color: #121212;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
     border: none;
-    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    font-size: 1.1em;
-    transition: background-color 0.3s ease;
+    z-index: 1001;
 }
 
-.modal .btn-primary:hover {
-    background-color: #0056b3;
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #1e1e1e;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
 }
 
-/* Tab Button Styles */
+.bottom-nav a {
+    color: #b0b0b0;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.75rem;
+}
+
+/* Forms & Modal Content */
 .tab-buttons {
     display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #555;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #333;
 }
 
 .tab-button {
-    background-color: #555;
-    color: #fff;
+    flex: 1;
+    padding: 10px;
     border: none;
-    padding: 10px 20px;
+    background: none;
     cursor: pointer;
-    font-size: 1em;
-    border-radius: 5px 5px 0 0;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 1rem;
+    color: #b0b0b0;
+    border-bottom: 2px solid transparent;
 }
 
 .tab-button.active {
-    background-color: #007bff;
-    color: white;
+    color: #6eb5ff;
+    border-bottom-color: #6eb5ff;
 }
 
-.tab-button:hover:not(.active) {
-    background-color: #666;
+form label {
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
-/* Form specific adjustments */
-.tab-content {
-    padding-top: 15px;
+form input[type="text"],
+form input[type="number"],
+form input[type="date"],
+form textarea,
+form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    box-sizing: border-box;
+    background-color: #2a2a2a;
+    color: #e0e0e0;
 }
 
-/* Folder Selection Modal Styles */
+form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.image-upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.file-name-display {
+    font-style: italic;
+    color: #b0b0b0;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: #6eb5ff;
+    color: #121212;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.btn-secondary {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+}
+
+/* Message Box */
+.message-box {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #e0e0e0;
+    color: #121212;
+    padding: 12px 20px;
+    border-radius: 6px;
+    z-index: 2000;
+    font-size: 0.9rem;
+}
+
+.message-box.error {
+    background-color: #ff7b7b;
+    color: #121212;
+}
+
+/* Folder Selection Modal */
+#folder-selection-modal .modal-content {
+    background-color: #1e1e1e;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #444;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
 #folder-tree-container {
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #555;
+    border: 1px solid #444;
     padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
+    background-color: #2a2a2a;
 }
 
 .folder-node {
     padding: 8px;
     cursor: pointer;
     border-radius: 4px;
-    margin-bottom: 4px;
 }
 
 .folder-node:hover {
-    background-color: #5a5a5a;
+    background-color: #3a3a3a;
 }
 
 .folder-node.selected {
-    background-color: #007bff;
-    color: white;
-    font-weight: bold;
-}
-
-.root-node {
-    font-style: italic;
+    background-color: #6eb5ff;
+    color: #121212;
 }

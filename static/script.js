@@ -389,18 +389,70 @@ tabButtons.forEach(button => {
     });
 });
 
+async function populateFolderDropdown(elementId, selectedId = null) {
+    const dropdown = document.getElementById(elementId);
+    if (!dropdown) return;
+    dropdown.innerHTML = ''; // Clear existing options
+
+    try {
+        const response = await fetch('/folders/');
+        if (!response.ok) throw new Error('Failed to fetch folders');
+        const folders = await response.json();
+
+        const foldersById = folders.reduce((acc, f) => {
+            acc[f.id] = { ...f, children: [] };
+            return acc;
+        }, {});
+
+        const rootFolders = [];
+        folders.forEach(f => {
+            if (f.parent_id && foldersById[f.parent_id]) {
+                foldersById[f.parent_id].children.push(foldersById[f.id]);
+            } else if (f.parent_id === null) {
+                rootFolders.push(foldersById[f.id]);
+            }
+        });
+
+        dropdown.add(new Option('-- Root --', ''));
+
+        function addOptions(folder, level) {
+            const prefix = '\u00A0\u00A0'.repeat(level);
+            const option = new Option(`${prefix}${folder.name}`, folder.id);
+            dropdown.add(option);
+
+            const children = foldersById[folder.id]?.children || [];
+            children.sort((a, b) => a.name.localeCompare(b.name));
+            children.forEach(child => addOptions(child, level + 1));
+        }
+
+        rootFolders.sort((a, b) => a.name.localeCompare(b.name));
+        rootFolders.forEach(f => addOptions(f, 0));
+
+        if (selectedId) {
+            dropdown.value = selectedId;
+        }
+
+    } catch (error) {
+        console.error(`Failed to populate dropdown ${elementId}:`, error);
+        showMessage('Could not load folder list.', true);
+    }
+}
+
 // Function to open the Add/Edit Modal
-function openAddEditModal(type, data = null) {
+async function openAddEditModal(type, data = null) {
     addEditModal.style.display = 'block';
     addFolderForm.reset();
     addItemForm.reset();
-    document.getElementById('modalItemImageFile').value = ''; // Clear file input
-    document.getElementById('modalFolderImageFile').value = ''; // Clear file input
-    document.getElementById('modalItemCameraFile').value = ''; // Clear file input
-    document.getElementById('modalFolderCameraFile').value = ''; // Clear file input
     document.getElementById('selectedItemImageName').textContent = 'No file chosen';
     document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
 
+    // Determine the correct folder/parent ID to pre-select
+    const folderIdToSelect = (type === 'item' && data) ? data.folder_id : currentFolderId;
+    const parentIdToSelect = (type === 'folder' && data) ? data.parent_id : currentFolderId;
+
+    // Populate both dropdowns
+    await populateFolderDropdown('modalItemFolderId', folderIdToSelect);
+    await populateFolderDropdown('modalFolderParentId', parentIdToSelect);
 
     if (type === 'item') {
         switchModalTab('add-item-form');
@@ -414,12 +466,9 @@ function openAddEditModal(type, data = null) {
             document.getElementById('modalItemTags').value = data.tags || '';
             document.getElementById('modalItemAcquiredDate').value = data.acquired_date || '';
             document.getElementById('modalItemNotes').value = data.notes || '';
-            document.getElementById('modalItemFolderId').value = data.folder_id || '';
-            // No direct image preview in modal for existing images, handled by displayItemDetails
         } else {
             currentEditingItem = null;
             modalTitle.textContent = 'Add New Item';
-            document.getElementById('modalItemFolderId').value = currentFolderId || ''; // Pre-fill folder ID if in a folder
         }
     } else if (type === 'folder') {
         switchModalTab('add-folder-form');
@@ -430,11 +479,9 @@ function openAddEditModal(type, data = null) {
             document.getElementById('modalFolderDescription').value = data.description || '';
             document.getElementById('modalFolderNotes').value = data.notes || '';
             document.getElementById('modalFolderTags').value = data.tags || '';
-            document.getElementById('modalFolderParentId').value = data.parent_id || '';
         } else {
             currentEditingFolder = null;
             modalTitle.textContent = 'Add New Folder';
-            document.getElementById('modalFolderParentId').value = currentFolderId || ''; // Pre-fill parent ID if in a folder
         }
     }
 }

@@ -12,7 +12,7 @@ import logging # Import logging for debugging
 
 # Import specific crud functions and schemas directly
 from app.crud.folder import ( # Direct import of functions
-    create_folder, get_folder, get_root_folders, update_folder, delete_folder,
+    create_folder, get_folder, get_all_folders, update_folder, delete_folder,
     clone_folder, move_folder, calculate_folder_quantity
 )
 from app.crud.image import create_image as crud_create_image # Import image CRUD
@@ -117,14 +117,13 @@ def read_folder(folder_id: int, db: Session = Depends(get_db)):
     return _post_process_folder_response(db_folder)
 
 
-@router.get("/", response_model=List[FolderResponse], summary="Get all root folders")
-def read_root_folders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@router.get("/", response_model=List[FolderResponse], summary="Get all folders")
+def read_all_folders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
-    Retrieve a list of all root-level folders (folders with no parent), with pagination.
+    Retrieve a list of all folders.
     """
-    folders = get_root_folders(db=db, skip=skip, limit=limit) # Direct call
-    # Apply post-processing to each folder in the list
-    return [_post_process_folder_response(f) for f in folders]
+    folders = get_all_folders(db=db, skip=skip, limit=limit)
+    return folders
 
 
 @router.put("/{folder_id}", response_model=FolderResponse, summary="Update a folder by ID")

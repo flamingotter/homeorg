@@ -42,11 +42,17 @@ async function displayItems(items) {
         const images = await fetch(`/images/?item_id=${item.id}`).then(res => res.json());
         const imageUrl = (images && images.length > 0) ? `/static_images/${images[0].filename}` : 'https://placehold.co/80x80';
 
+        let displayUnit = item.unit || '';
+        const match = displayUnit.match(/\(([^)]+)\)/);
+        if (match) {
+            displayUnit = match[1];
+        }
+
         itemCard.innerHTML = `
             <img src="${imageUrl}" alt="${item.name}" class="thumbnail">
             <div class="item-details">
                 <h3 class="item-title">${item.name}</h3>
-                <div class="item-info">${item.quantity || 0} ${item.unit || ''}</div>
+                <div class="item-info">${item.quantity || 0} ${displayUnit}</div>
             </div>
             <div class="item-actions">
                 <i class="material-icons more-options-button">more_vert</i>
@@ -461,6 +467,7 @@ async function openAddEditModal(type, data = null) {
     await populateFolderDropdown('modalFolderParentId', parentIdToSelect);
 
     if (type === 'item') {
+        populateUnitDropdown();
         switchModalTab('add-item-form');
         if (data) {
             currentEditingItem = data;
@@ -658,23 +665,24 @@ async function populateUnitDropdown() {
     unitSelect.innerHTML = '<option value="">Select Unit</option>';
 
     // Example units - replace with API call if units are dynamic
-    const units = ['pcs', 'kg', 'g', 'L', 'ml', 'box', 'pack', 'set', 'pair', 'each'];
+    const units = [
+        'Each (Ea)', 'Piece (Pc)', 'Unit (Un)', 'Pair (Pr)', 'Set', 'Dozen (Dz)', 'Gross (Gr)', 
+        'Bag (Bg)', 'Bale', 'Barrel (Bbl)', 'Bottle (Bt)', 'Box (Bx)', 'Bundle (Bdl)', 'Can', 
+        'Carton (Ct)', 'Case (Cs)', 'Crate', 'Drum', 'Jar', 'Pack (Pk)', 'Package (Pkg)', 
+        'Pallet (Plt)', 'Ream', 'Roll (Rl)', 'Sack', 'Skid', 'Spool', 'Tray', 'Tube', 
+        'Pound (lb)', 'Ounce (oz)', 'Gram (g)', 'Kilogram (kg)', 'Ton', 'Metric Ton (t)', 
+        'Gallon (gal)', 'Quart (qt)', 'Pint (pt)', 'Fluid Ounce (fl oz)', 'Liter (L)', 'Milliliter (mL)', 
+        'Cubic Foot (cu ft)', 'Cubic Meter (cu m)', 'Foot (ft)', 'Inch (in)', 'Yard (yd)', 
+        'Meter (m)', 'Centimeter (cm)', 'Millimeter (mm)'
+    ];
 
     units.forEach(unit => {
         const option = document.createElement('option');
         option.value = unit;
         option.textContent = unit;
-        option.appendChild(option);
+        unitSelect.appendChild(option);
     });
 }
-
-// Call populateUnitDropdown when the modal is opened or on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', populateUnitDropdown);
-addEditModal.addEventListener('transitionend', (event) => {
-    if (event.propertyName === 'opacity' && addEditModal.style.display === 'block') {
-        populateUnitDropdown();
-    }
-});
 
 // Global variables for folder selection
 let currentMoveType = null; // 'item' or 'folder'

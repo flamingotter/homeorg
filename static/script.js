@@ -110,6 +110,7 @@ async function displayFolders(folders) {
 
 function showOptionsMenu(buttonElement, type, data) {
     closeAllMenus(); // Close any other open menus
+    document.getElementById('add-item-fab').style.display = 'none';
 
     const menu = document.createElement('div');
     menu.className = 'options-menu';
@@ -223,6 +224,7 @@ function showOptionsMenu(buttonElement, type, data) {
 
 function closeAllMenus() {
     document.querySelectorAll('.options-menu').forEach(menu => menu.remove());
+    document.getElementById('add-item-fab').style.display = 'flex';
 }
 
 // --- VIEW & NAVIGATION LOGIC ---
@@ -668,7 +670,7 @@ async function populateUnitDropdown() {
         const option = document.createElement('option');
         option.value = unit;
         option.textContent = unit;
-        unitSelect.appendChild(option);
+        option.appendChild(option);
     });
 }
 

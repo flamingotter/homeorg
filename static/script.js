@@ -222,6 +222,7 @@ function closeAllMenus() {
 function showMainGrid() {
     document.getElementById('items-grid').style.display = 'flex';
     document.getElementById('details-view').style.display = 'none';
+    document.getElementById('add-edit-modal').style.display = 'none';
     document.querySelector('.counts').style.display = 'flex';
     document.getElementById('add-item-fab').style.display = 'flex';
     if (currentFolderId === null) {
@@ -356,7 +357,7 @@ async function showDetails(type, id) {
 
         if (type === 'item') {
             itemForm.style.display = 'block';
-            document.querySelector('#item-details-form button[type="submit"]').style.display = 'block';
+            document.querySelector('#item-details-form button[type="submit"]').textContent = 'Update Item';
             document.getElementById('detailsItemId').value = data.id;
             document.getElementById('detailsItemName').value = data.name;
             document.getElementById('detailsItemDescription').value = data.description || '';
@@ -368,7 +369,7 @@ async function showDetails(type, id) {
             await populateFolderDropdown('detailsItemFolderId', data.folder_id);
         } else { // folder
             folderForm.style.display = 'block';
-            document.querySelector('#folder-details-form button[type="submit"]').style.display = 'block';
+            document.querySelector('#folder-details-form button[type="submit"]').textContent = 'Update Folder';
             document.getElementById('detailsFolderId').value = data.id;
             document.getElementById('detailsFolderName').value = data.name;
             document.getElementById('detailsFolderDescription').value = data.description || '';
@@ -384,7 +385,203 @@ async function showDetails(type, id) {
 }
 
 // --- INITIALIZATION & GLOBAL LISTENERS ---
-document.addEventListener('DOMContentLoaded', loadRootView);
+document.addEventListener('DOMContentLoaded', () => {
+    loadRootView();
+
+    // --- MODAL HANDLING ---
+    const addEditModal = document.getElementById('add-edit-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const closeAddEditModalButton = addEditModal.querySelector('.close-button');
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    const addFolderForm = document.getElementById('add-folder-form');
+    const addItemForm = document.getElementById('add-item-form');
+
+    // Function to switch tabs within the modal
+    function switchModalTab(tabId) {
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+            content.classList.remove('active');
+        });
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        document.getElementById(tabId).style.display = 'block';
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+    }
+
+    // Event listeners for tab buttons
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchModalTab(button.dataset.tab);
+        });
+    });
+
+    // Function to open the Add/Edit Modal
+    function openAddModal(type) {
+        addEditModal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        addFolderForm.reset();
+        addItemForm.reset();
+        document.getElementById('selectedItemImageName').textContent = 'No file chosen';
+        document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
+
+        // Populate both dropdowns
+        populateFolderDropdown('modalItemFolderId', currentFolderId);
+        populateFolderDropdown('modalFolderParentId', currentFolderId);
+        populateUnitDropdown('modalItemUnit');
+
+        if (type === 'item') {
+            switchModalTab('add-item-form');
+            modalTitle.textContent = 'Add New Item';
+        } else if (type === 'folder') {
+            switchModalTab('add-folder-form');
+            modalTitle.textContent = 'Add New Folder';
+        }
+    }
+
+    // Function to close the Add/Edit Modal
+    function closeAddEditModal() {
+        addEditModal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    }
+
+    // Event Listeners for Modal Close
+    closeAddEditModalButton.addEventListener('click', closeAddEditModal);
+    window.addEventListener('click', (event) => {
+        if (event.target === addEditModal) {
+            closeAddEditModal();
+        }
+    });
+
+    // Handle Add Item FAB click
+    document.getElementById('add-item-fab').addEventListener('click', () => openAddModal('item'));
+
+    // Handle Folder Form Submission
+    addFolderForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData();
+
+        // Append all fields except the file inputs initially
+        new FormData(form).forEach((value, key) => {
+            if (key !== 'image') {
+                formData.append(key, value);
+            }
+        });
+
+        // Find the file that was actually selected by the user
+        const cameraFile = form.querySelector('#modalFolderCameraFile').files[0];
+        const chosenFile = form.querySelector('#modalFolderImageFile').files[0];
+
+        const imageFile = cameraFile || chosenFile;
+
+        if (imageFile) {
+            formData.append('image', imageFile, imageFile.name);
+        }
+
+        try {
+            const response = await fetch('/folders/', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                showMessage('Folder added successfully!');
+                closeAddEditModal();
+                loadFolderView();
+            } else {
+                const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                showMessage(`Failed to save folder: ${error.detail}`, true);
+            }
+        } catch (error) {
+            showMessage(`An error occurred: ${error.message}`, true);
+        }
+    });
+
+    // Handle Item Form Submission
+    addItemForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData();
+
+        // Append all fields except the file inputs initially
+        new FormData(form).forEach((value, key) => {
+            if (key !== 'image') {
+                formData.append(key, value);
+            }
+        });
+
+        // Find the file that was actually selected by the user
+        const cameraFile = form.querySelector('#modalItemCameraFile').files[0];
+        const chosenFile = form.querySelector('#modalItemImageFile').files[0];
+
+        const imageFile = cameraFile || chosenFile;
+
+        if (imageFile) {
+            formData.append('image', imageFile, imageFile.name);
+        }
+
+        try {
+            const response = await fetch('/items/', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                showMessage('Item added successfully!');
+                closeAddEditModal();
+                loadFolderView();
+            } else {
+                const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                showMessage(`Failed to save item: ${error.detail}`, true);
+            }
+        } catch (error) {
+            showMessage(`An error occurred: ${error.message}`, true);
+        }
+    });
+
+    // --- IMAGE HANDLING ---
+    document.getElementById('takeItemPhotoButton').addEventListener('click', () => {
+        document.getElementById('modalItemCameraFile').click();
+    });
+
+    document.getElementById('chooseItemFileButton').addEventListener('click', () => {
+        document.getElementById('modalItemImageFile').click();
+    });
+
+    document.getElementById('takeFolderPhotoButton').addEventListener('click', () => {
+        document.getElementById('modalFolderCameraFile').click();
+    });
+
+    document.getElementById('chooseFolderFileButton').addEventListener('click', () => {
+        document.getElementById('modalFolderImageFile').click();
+    });
+
+    function handleFileSelection(inputId, nameDisplayId) {
+        const input = document.getElementById(inputId);
+        const nameDisplay = document.getElementById(nameDisplayId);
+        input.addEventListener('change', () => {
+            if (input.files.length > 0) {
+                nameDisplay.textContent = input.files[0].name;
+            } else {
+                nameDisplay.textContent = 'No file chosen';
+            }
+        });
+    }
+
+    handleFileSelection('modalItemImageFile', 'selectedItemImageName');
+    handleFileSelection('modalItemCameraFile', 'selectedItemImageName');
+    handleFileSelection('modalFolderImageFile', 'selectedFolderImageName');
+    handleFileSelection('modalFolderCameraFile', 'selectedFolderImageName');
+});
+
 document.addEventListener('click', (event) => {
     if (!event.target.closest('.options-menu') && !event.target.classList.contains('more-options-button')) {
         closeAllMenus();
@@ -392,7 +589,7 @@ document.addEventListener('click', (event) => {
 });
 
 document.getElementById('back-button').addEventListener('click', async () => {
-    if (document.getElementById('details-view').style.display === 'block') {
+    if (document.getElementById('details-view').style.display === 'block' || document.getElementById('add-edit-modal').style.display === 'block') {
         showMainGrid();
         loadFolderView();
     } else if (currentFolderId !== null) {

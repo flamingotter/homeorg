@@ -105,6 +105,86 @@
         </div>
     </div>
 
+    <!-- Add/Edit Item/Folder Modal -->
+    <div id="add-edit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="modal-title">Add New Entry</h2>
+
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="add-folder-form">Add Folder</button>
+                <button class="tab-button" data-tab="add-item-form">Add Item</button>
+            </div>
+
+            <!-- Add Folder Form -->
+            <form id="add-folder-form" class="tab-content active">
+                <label for="modalFolderName">Folder Name:</label>
+                <input type="text" id="modalFolderName" name="name" required>
+
+                <label for="modalFolderDescription">Description:</label>
+                <textarea id="modalFolderDescription" name="description"></textarea>
+
+                <label for="modalFolderNotes">Notes:</label>
+                <textarea id="modalFolderNotes" name="notes"></textarea>
+
+                <label for="modalFolderTags">Tags (comma-separated):</label>
+                <input type="text" id="modalFolderTags" name="tags">
+
+                <label>Folder Image:</label>
+                <div class="image-upload-controls">
+                    <button type="button" id="takeFolderPhotoButton" class="btn-secondary">Take Photo</button>
+                    <button type="button" id="chooseFolderFileButton" class="btn-secondary">Choose File</button>
+                    <input type="file" id="modalFolderImageFile" name="image" accept="image/*" style="display: none;">
+                    <input type="file" id="modalFolderCameraFile" name="image" accept="image/*" capture="camera" style="display: none;">
+                    <span id="selectedFolderImageName" class="file-name-display">No file chosen</span>
+                </div>
+
+                <label for="modalFolderParentId">Parent Folder:</label>
+                <select id="modalFolderParentId" name="parent_id"></select>
+
+                <button type="submit" class="btn-primary">Create Folder</button>
+            </form>
+
+            <!-- Add Item Form -->
+            <form id="add-item-form" class="tab-content" style="display: none;">
+                <label for="modalItemName">Item Name:</label>
+                <input type="text" id="modalItemName" name="name" required>
+
+                <label for="modalItemDescription">Description:</label>
+                <textarea id="modalItemDescription" name="description"></textarea>
+
+                <label for="modalItemQuantity">Quantity:</label>
+                <input type="number" id="modalItemQuantity" name="quantity" value="1" required>
+
+                <label for="modalItemUnit">Unit:</label>
+                <select id="modalItemUnit" name="unit"></select>
+
+                <label for="modalItemTags">Tags (comma-separated):</label>
+                <input type="text" id="modalItemTags" name="tags">
+
+                <label for="modalItemAcquiredDate">Acquired Date:</label>
+                <input type="date" id="modalItemAcquiredDate" name="acquired_date">
+
+                <label for="modalItemNotes">Notes:</label>
+                <textarea id="modalItemNotes" name="notes"></textarea>
+
+                <label>Item Image:</label>
+                <div class="image-upload-controls">
+                    <button type="button" id="takeItemPhotoButton" class="btn-secondary">Take Photo</button>
+                    <button type="button" id="chooseItemFileButton" class="btn-secondary">Choose File</button>
+                    <input type="file" id="modalItemImageFile" name="image" accept="image/*" style="display: none;">
+                    <input type="file" id="modalItemCameraFile" name="image" accept="image/*" capture="camera" style="display: none;">
+                    <span id="selectedItemImageName" class="file-name-display">No file chosen</span>
+                </div>
+
+                <label for="modalItemFolderId">Folder:</label>
+                <select id="modalItemFolderId" name="folder_id"></select>
+
+                <button type="submit" class="btn-primary">Create Item</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <a href="#" onclick="loadRootView(); return false;">

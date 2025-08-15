@@ -76,7 +76,7 @@ async def create_new_folder(
     db_folder = create_folder(db=db, folder=folder_schema)
 
     # Step 3: Handle the image upload, if provided
-    if image:
+    if image and image.filename:
         UPLOAD_DIRECTORY = "/app/static/images"
         os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
         file_path = os.path.join(UPLOAD_DIRECTORY, image.filename)
@@ -155,7 +155,7 @@ async def update_existing_folder(
 
     updated_folder = update_folder(db=db, folder_id=folder_id, folder=folder_update_schema)
 
-    if image:
+    if image and image.filename:
         UPLOAD_DIRECTORY = "/app/static/images"
         os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
         file_path = os.path.join(UPLOAD_DIRECTORY, image.filename)

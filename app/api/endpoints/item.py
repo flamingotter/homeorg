@@ -84,7 +84,7 @@ async def create_item(
     )
     db_item = crud_item.create_item(db=db, item=item_schema)
 
-    if image:
+    if image and image.filename:
         filename = os.path.basename(image.filename)
         file_location = os.path.join(IMAGE_DIR, filename)
         try:
@@ -135,7 +135,7 @@ async def update_item(
     
     updated_item = crud_item.update_item(db=db, item_id=item_id, item=item_update_schema)
 
-    if image:
+    if image and image.filename:
         filename = os.path.basename(image.filename)
         file_location = os.path.join(IMAGE_DIR, filename)
         try:

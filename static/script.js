@@ -438,6 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'item') {
             switchModalTab('add-item-form');
             modalTitle.textContent = 'Add New Item';
+            document.getElementById('modalItemUnit').value = 'Each (Ea)';
+            document.getElementById('modalItemAcquiredDate').value = new Date().toISOString().split('T')[0];
         } else if (type === 'folder') {
             switchModalTab('add-folder-form');
             modalTitle.textContent = 'Add New Folder';

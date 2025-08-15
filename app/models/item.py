@@ -1,7 +1,7 @@
 # app/models/item.py
 # Defines the SQLAlchemy model for items.
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, Date
 from sqlalchemy.orm import relationship
 from app.db.base import Base # Ensure this import is correct relative to your current structure
 
@@ -20,6 +20,7 @@ class Item(Base):
     # Tags will be stored as a comma-separated string for simplicity,
     # but could be a separate table for more complex tag management
     tags = Column(String, nullable=True)
+    acquired_date = Column(Date, nullable=True)
     # folder_id links an item to its parent folder
     folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
 

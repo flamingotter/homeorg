@@ -54,51 +54,51 @@
             
             <!-- Folder Form -->
             <form id="folder-details-form" style="display: none;">
-                <input type="hidden" id="detailsFolderId">
+                <input type="hidden" id="detailsFolderId" name="id">
                 <label for="detailsFolderName">Folder Name:</label>
-                <input type="text" id="detailsFolderName" required>
+                <input type="text" id="detailsFolderName" name="name" required>
 
                 <label for="detailsFolderDescription">Description:</label>
-                <textarea id="detailsFolderDescription"></textarea>
+                <textarea id="detailsFolderDescription" name="description"></textarea>
 
                 <label for="detailsFolderNotes">Notes:</label>
-                <textarea id="detailsFolderNotes"></textarea>
+                <textarea id="detailsFolderNotes" name="notes"></textarea>
 
                 <label for="detailsFolderTags">Tags (comma-separated):</label>
-                <input type="text" id="detailsFolderTags">
+                <input type="text" id="detailsFolderTags" name="tags">
 
                 <label for="detailsFolderParentId">Parent Folder:</label>
-                <select id="detailsFolderParentId"></select>
+                <select id="detailsFolderParentId" name="parent_id"></select>
 
                 <button type="submit" class="btn-primary">Update Folder</button>
             </form>
 
             <!-- Item Form -->
             <form id="item-details-form" style="display: none;">
-                <input type="hidden" id="detailsItemId">
+                <input type="hidden" id="detailsItemId" name="id">
                 <label for="detailsItemName">Item Name:</label>
-                <input type="text" id="detailsItemName" required>
+                <input type="text" id="detailsItemName" name="name" required>
 
                 <label for="detailsItemDescription">Description:</label>
-                <textarea id="detailsItemDescription"></textarea>
+                <textarea id="detailsItemDescription" name="description"></textarea>
 
                 <label for="detailsItemQuantity">Quantity:</label>
-                <input type="number" id="detailsItemQuantity" value="1" required>
+                <input type="number" id="detailsItemQuantity" name="quantity" value="1" required>
 
                 <label for="detailsItemUnit">Unit:</label>
-                <select id="detailsItemUnit"></select>
+                <select id="detailsItemUnit" name="unit"></select>
 
                 <label for="detailsItemTags">Tags (comma-separated):</label>
-                <input type="text" id="detailsItemTags">
+                <input type="text" id="detailsItemTags" name="tags">
 
                 <label for="detailsItemAcquiredDate">Acquired Date:</label>
-                <input type="date" id="detailsItemAcquiredDate">
+                <input type="date" id="detailsItemAcquiredDate" name="acquired_date">
 
                 <label for="detailsItemNotes">Notes:</label>
-                <textarea id="detailsItemNotes"></textarea>
+                <textarea id="detailsItemNotes" name="notes"></textarea>
 
                 <label for="detailsItemFolderId">Folder:</label>
-                <select id="detailsItemFolderId"></select>
+                <select id="detailsItemFolderId" name="folder_id"></select>
 
                 <button type="submit" class="btn-primary">Update Item</button>
             </form>

@@ -283,6 +283,55 @@ async function loadFolderView() {
     }
 }
 
+async function populateFolderDropdown(elementId, selectedId = null) {
+    const dropdown = document.getElementById(elementId);
+    if (!dropdown) return;
+    dropdown.innerHTML = ''; // Clear existing options
+
+    try {
+        const response = await fetch('/folders/');
+        if (!response.ok) throw new Error('Failed to fetch folders');
+        const folders = await response.json();
+
+        const foldersById = folders.reduce((acc, f) => {
+            acc[f.id] = { ...f, children: [] };
+            return acc;
+        }, {});
+
+        const rootFolders = [];
+        folders.forEach(f => {
+            if (f.parent_id && foldersById[f.parent_id]) {
+                foldersById[f.parent_id].children.push(foldersById[f.id]);
+            } else if (f.parent_id === null) {
+                rootFolders.push(foldersById[f.id]);
+            }
+        });
+
+        dropdown.add(new Option('-- Root --', ''));
+
+        function addOptions(folder, level) {
+            const prefix = '  '.repeat(level);
+            const option = new Option(`${prefix}${folder.name}`, folder.id);
+            dropdown.add(option);
+
+            const children = foldersById[folder.id]?.children || [];
+            children.sort((a, b) => a.name.localeCompare(b.name));
+            children.forEach(child => addOptions(child, level + 1));
+        }
+
+        rootFolders.sort((a, b) => a.name.localeCompare(b.name));
+        rootFolders.forEach(f => addOptions(f, 0));
+
+        if (selectedId) {
+            dropdown.value = selectedId;
+        }
+
+    } catch (error) {
+        console.error(`Failed to populate dropdown ${elementId}:`, error);
+        showMessage('Could not load folder list.', true);
+    }
+}
+
 async function showDetails(type, id) {
     document.getElementById('items-grid').style.display = 'none';
     document.getElementById('details-view').style.display = 'block';
@@ -308,20 +357,18 @@ async function showDetails(type, id) {
         if (type === 'item') {
             itemForm.style.display = 'block';
             document.querySelector('#item-details-form button[type="submit"]').style.display = 'block';
-            console.log('Item form:', itemForm, 'Update button:', document.querySelector('#item-details-form button[type="submit"]'));
             document.getElementById('detailsItemId').value = data.id;
             document.getElementById('detailsItemName').value = data.name;
             document.getElementById('detailsItemDescription').value = data.description || '';
             document.getElementById('detailsItemQuantity').value = data.quantity || '';
             await populateUnitDropdown('detailsItemUnit', data.unit);
             document.getElementById('detailsItemTags').value = data.tags || '';
-            document.getElementById('detailsItemAcquiredDate').value = data.acquired_date || '';
+            document.getElementById('detailsItemAcquiredDate').value = data.acquired_date;
             document.getElementById('detailsItemNotes').value = data.notes || '';
             await populateFolderDropdown('detailsItemFolderId', data.folder_id);
         } else { // folder
             folderForm.style.display = 'block';
             document.querySelector('#folder-details-form button[type="submit"]').style.display = 'block';
-            console.log('Folder form:', folderForm, 'Update button:', document.querySelector('#folder-details-form button[type="submit"]'));
             document.getElementById('detailsFolderId').value = data.id;
             document.getElementById('detailsFolderName').value = data.name;
             document.getElementById('detailsFolderDescription').value = data.description || '';
@@ -356,166 +403,6 @@ document.getElementById('back-button').addEventListener('click', async () => {
 });
 
 document.getElementById('home-button').addEventListener('click', loadRootView);
-
-// --- MODAL & FORM HANDLING ---
-const addEditModal = document.getElementById('add-edit-modal');
-const modalTitle = document.getElementById('modal-title');
-const closeAddEditModalButton = addEditModal.querySelector('.close-button');
-
-const tabButtons = document.querySelectorAll('.tab-button');
-const tabContents = document.querySelectorAll('.tab-content');
-
-const addFolderForm = document.getElementById('add-folder-form');
-const addItemForm = document.getElementById('add-item-form');
-
-function switchModalTab(tabId) {
-    tabContents.forEach(content => {
-        content.style.display = 'none';
-        content.classList.remove('active');
-    });
-    tabButtons.forEach(button => {
-        button.classList.remove('active');
-    });
-
-    document.getElementById(tabId).style.display = 'block';
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-}
-
-tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        switchModalTab(button.dataset.tab);
-    });
-});
-
-async function populateFolderDropdown(elementId, selectedId = null) {
-    const dropdown = document.getElementById(elementId);
-    if (!dropdown) return;
-    dropdown.innerHTML = '';
-
-    try {
-        const response = await fetch('/folders/');
-        if (!response.ok) throw new Error('Failed to fetch folders');
-        const folders = await response.json();
-
-        const foldersById = folders.reduce((acc, f) => {
-            acc[f.id] = { ...f, children: [] };
-            return acc;
-        }, {});
-
-        const rootFolders = [];
-        folders.forEach(f => {
-            if (f.parent_id && foldersById[f.parent_id]) {
-                foldersById[f.parent_id].children.push(foldersById[f.id]);
-            } else if (f.parent_id === null) {
-                rootFolders.push(foldersById[f.id]);
-            }
-        });
-
-        dropdown.add(new Option('-- Root --', ''));
-
-        function addOptions(folder, level) {
-            const prefix = '\u00A0\u00A0'.repeat(level);
-            const option = new Option(`${prefix}${folder.name}`, folder.id);
-            dropdown.add(option);
-
-            const children = foldersById[folder.id]?.children || [];
-            children.sort((a, b) => a.name.localeCompare(b.name));
-            children.forEach(child => addOptions(child, level + 1));
-        }
-
-        rootFolders.sort((a, b) => a.name.localeCompare(b.name));
-        rootFolders.forEach(f => addOptions(f, 0));
-
-        if (selectedId) {
-            dropdown.value = selectedId;
-        }
-
-    } catch (error) {
-        console.error(`Failed to populate dropdown ${elementId}:`, error);
-        showMessage('Could not load folder list.', true);
-    }
-}
-
-function openAddModal(type) {
-    addEditModal.style.display = 'block';
-    addFolderForm.reset();
-    addItemForm.reset();
-    document.getElementById('selectedItemImageName').textContent = 'No file chosen';
-    document.getElementById('selectedFolderImageName').textContent = 'No file chosen';
-
-    populateFolderDropdown('modalItemFolderId', currentFolderId);
-    populateFolderDropdown('modalFolderParentId', currentFolderId);
-    populateUnitDropdown('modalItemUnit');
-
-    if (type === 'item') {
-        modalTitle.textContent = 'New Item';
-        switchModalTab('add-item-form');
-    } else {
-        modalTitle.textContent = 'New Folder';
-        switchModalTab('add-folder-form');
-    }
-}
-
-function closeAddEditModal() {
-    addEditModal.style.display = 'none';
-}
-
-closeAddEditModalButton.addEventListener('click', closeAddEditModal);
-
-document.getElementById('add-item-fab').addEventListener('click', () => openAddModal('item'));
-
-addFolderForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(addFolderForm);
-    const parentIdValue = document.getElementById('modalFolderParentId').value;
-    if (parentIdValue) {
-        formData.append('parent_id', parentIdValue);
-    }
-
-    try {
-        const response = await fetch('/folders/', {
-            method: 'POST',
-            body: formData
-        });
-        if (response.ok) {
-            showMessage('Folder added successfully!');
-            closeAddEditModal();
-            loadFolderView();
-        } else {
-            const error = await response.json();
-            showMessage(`Failed to add folder: ${error.detail}`, true);
-        }
-    } catch (error) {
-        showMessage(`An error occurred: ${error.message}`, true);
-    }
-});
-
-addItemForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(addItemForm);
-    const folderIdValue = document.getElementById('modalItemFolderId').value;
-    if (folderIdValue) {
-        formData.append('folder_id', folderIdValue);
-    }
-
-    try {
-        const response = await fetch('/items/', {
-            method: 'POST',
-            body: formData
-        });
-        if (response.ok) {
-            showMessage('Item added successfully!');
-            closeAddEditModal();
-            loadFolderView();
-        } else {
-            const error = await response.json();
-            showMessage(`Failed to add item: ${error.detail}`, true);
-        }
-    } catch (error) {
-        showMessage(`An error occurred: ${error.message}`, true);
-    }
-});
 
 document.getElementById('item-details-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -560,26 +447,6 @@ document.getElementById('folder-details-form').addEventListener('submit', async 
         showMessage(`An error occurred: ${error.message}`, true);
     }
 });
-
-
-// Image File Input Change Listeners
-document.getElementById('modalFolderImageFile').addEventListener('change', function() {
-    document.getElementById('selectedFolderImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-});
-document.getElementById('modalFolderCameraFile').addEventListener('change', function() {
-    document.getElementById('selectedFolderImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-});
-document.getElementById('modalItemImageFile').addEventListener('change', function() {
-    document.getElementById('selectedItemImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-});
-document.getElementById('modalItemCameraFile').addEventListener('change', function() {
-    document.getElementById('selectedItemImageName').textContent = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-});
-
-document.getElementById('takeFolderPhotoButton').addEventListener('click', () => document.getElementById('modalFolderCameraFile').click());
-document.getElementById('chooseFolderFileButton').addEventListener('click', () => document.getElementById('modalFolderImageFile').click());
-document.getElementById('takeItemPhotoButton').addEventListener('click', () => document.getElementById('modalItemCameraFile').click());
-document.getElementById('chooseItemFileButton').addEventListener('click', () => document.getElementById('modalItemImageFile').click());
 
 async function populateUnitDropdown(elementId, selectedUnit = '') {
     const unitSelect = document.getElementById(elementId);

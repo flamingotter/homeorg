@@ -1,3 +1,6 @@
+import os
+print(os.getcwd())
+
 from sqlalchemy.orm import Session
 from app.crud import folder as crud_folder
 from app.crud import item as crud_item

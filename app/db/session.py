@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db.base import Base # Import Base from its new, dedicated location
 
 # Get the database URL from environment variables, defaulting to a local SQLite file
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////data/data.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/data.db")
 
 # Create the SQLAlchemy engine
 # connect_args is needed for SQLite to allow multiple threads to access the database

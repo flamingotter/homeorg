@@ -3,6 +3,7 @@
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from datetime import date
 from .image import ImageResponse # Import ImageResponse for nesting
 
 # Base schema for Item attributes
@@ -13,6 +14,7 @@ class ItemBase(BaseModel):
     unit: Optional[str] = Field(None, max_length=50, description="Unit of measurement (e.g., 'pcs', 'kg')")
     notes: Optional[str] = Field(None, max_length=1000, description="Additional notes about the item")
     tags: Optional[str] = Field(None, description="Comma-separated tags for the item")
+    acquired_date: Optional[date] = Field(None, description="Date the item was acquired")
     folder_id: Optional[int] = Field(None, description="ID of the folder this item belongs to")
 
 # Schema for creating a new Item

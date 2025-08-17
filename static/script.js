@@ -582,6 +582,15 @@ document.addEventListener('DOMContentLoaded', () => {
     handleFileSelection('modalItemCameraFile', 'selectedItemImageName');
     handleFileSelection('modalFolderImageFile', 'selectedFolderImageName');
     handleFileSelection('modalFolderCameraFile', 'selectedFolderImageName');
+
+    const fab = document.getElementById('add-item-fab');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 0) {
+            fab.style.display = 'none';
+        } else {
+            fab.style.display = 'flex';
+        }
+    });
 });
 
 document.addEventListener('click', (event) => {

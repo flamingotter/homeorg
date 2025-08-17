@@ -463,12 +463,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Add Item FAB click
     document.getElementById('add-item-fab').addEventListener('click', () => openAddModal('item'));
 
-    // Handle Folder Form Submission
-    addFolderForm.addEventListener('submit', async (event) => {
+    // Generic Form Submission Handler
+    async function handleFormSubmit(event, formType) {
         event.preventDefault();
 
         const form = event.target;
         const formData = new FormData();
+        const url = formType === 'item' ? '/items/' : '/folders/';
+        const successMessage = formType === 'item' ? 'Item added successfully!' : 'Folder added successfully!';
+        const failureMessage = formType === 'item' ? 'Failed to save item' : 'Failed to save folder';
+        const cameraFileInputId = formType === 'item' ? '#modalItemCameraFile' : '#modalFolderCameraFile';
+        const imageFileInputId = formType === 'item' ? '#modalItemImageFile' : '#modalFolderImageFile';
 
         // Append all fields except the file inputs initially
         new FormData(form).forEach((value, key) => {
@@ -478,8 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Find the file that was actually selected by the user
-        const cameraFile = form.querySelector('#modalFolderCameraFile').files[0];
-        const chosenFile = form.querySelector('#modalFolderImageFile').files[0];
+        const cameraFile = form.querySelector(cameraFileInputId).files[0];
+        const chosenFile = form.querySelector(imageFileInputId).files[0];
 
         const imageFile = cameraFile || chosenFile;
 
@@ -488,66 +493,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/folders/', {
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData
             });
 
             if (response.ok) {
-                showMessage('Folder added successfully!');
+                showMessage(successMessage);
                 closeAddEditModal();
                 loadFolderView();
             } else {
                 const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                showMessage(`Failed to save folder: ${error.detail}`, true);
+                showMessage(`${failureMessage}: ${error.detail}`, true);
             }
         } catch (error) {
             showMessage(`An error occurred: ${error.message}`, true);
         }
-    });
+    }
+
+    // Handle Folder Form Submission
+    addFolderForm.addEventListener('submit', (event) => handleFormSubmit(event, 'folder'));
 
     // Handle Item Form Submission
-    addItemForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const form = event.target;
-        const formData = new FormData();
-
-        // Append all fields except the file inputs initially
-        new FormData(form).forEach((value, key) => {
-            if (key !== 'image') {
-                formData.append(key, value);
-            }
-        });
-
-        // Find the file that was actually selected by the user
-        const cameraFile = form.querySelector('#modalItemCameraFile').files[0];
-        const chosenFile = form.querySelector('#modalItemImageFile').files[0];
-
-        const imageFile = cameraFile || chosenFile;
-
-        if (imageFile) {
-            formData.append('image', imageFile, imageFile.name);
-        }
-
-        try {
-            const response = await fetch('/items/', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                showMessage('Item added successfully!');
-                closeAddEditModal();
-                loadFolderView();
-            } else {
-                const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                showMessage(`Failed to save item: ${error.detail}`, true);
-            }
-        } catch (error) {
-            showMessage(`An error occurred: ${error.message}`, true);
-        }
-    });
+    addItemForm.addEventListener('submit', (event) => handleFormSubmit(event, 'item'));
 
     // --- IMAGE HANDLING ---
     document.getElementById('takeItemPhotoButton').addEventListener('click', () => {

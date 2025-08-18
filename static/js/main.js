@@ -221,7 +221,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('home-button').addEventListener('click', loadRootView);
-    document.getElementById('home-nav-link').addEventListener('click', loadRootView);
+    document.getElementById('home-nav-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        loadRootView();
+    });
 
     document.getElementById('item-details-form').addEventListener('submit', async (event) => {
         event.preventDefault();

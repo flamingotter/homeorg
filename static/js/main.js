@@ -3,10 +3,13 @@ import { displayItems, displayFolders, showMainGrid, switchModalTab, openAddModa
 
 let allItems = [];
 let currentFolderId = null;
+window.currentFolderId = currentFolderId;
 let moveOperation = { type: null, data: null, selectedFolderId: null };
 
 function handleFolderClick(folderId) {
     currentFolderId = folderId;
+    window.currentFolderId = currentFolderId;
+    history.pushState({ folderId: folderId }, "", `#folder=${folderId}`);
     loadFolderView();
 }
 
@@ -20,8 +23,35 @@ function handleFolderSelected(folderId) {
     moveOperation.selectedFolderId = folderId;
 }
 
+function initialLoad() {
+    const hash = location.hash;
+    if (hash) {
+        if (hash.includes('/')) { // Details view
+            const parts = hash.split('/');
+            const folderIdPart = parts[0];
+            const detailsPart = parts[1];
+            currentFolderId = parseInt(folderIdPart.split('=')[1]);
+            window.currentFolderId = currentFolderId;
+            const [type, id] = detailsPart.split('=');
+            showDetails(type, parseInt(id), loadFolderView);
+            return;
+        } else { // Folder view
+            const folderId = parseInt(hash.split('=')[1]);
+            if (!isNaN(folderId)) {
+                currentFolderId = folderId;
+                window.currentFolderId = currentFolderId;
+                loadFolderView();
+                return;
+            }
+        }
+    }
+    loadRootView();
+}
+
 async function loadRootView() {
     currentFolderId = null;
+    window.currentFolderId = currentFolderId;
+    history.pushState({ folderId: null }, "", "#");
     document.getElementById('header-title').textContent = "HomeOrg";
     showMainGrid(currentFolderId);
 
@@ -39,7 +69,7 @@ async function loadRootView() {
 
 async function loadFolderView() {
     if (currentFolderId === null) {
-        loadRootView();
+        await loadRootView();
         return;
     }
     showMainGrid(currentFolderId);
@@ -80,7 +110,20 @@ async function updateCountsUI() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadRootView();
+    initialLoad();
+
+    window.addEventListener('popstate', (event) => {
+        if (event.state) {
+            currentFolderId = event.state.folderId;
+            window.currentFolderId = currentFolderId;
+            if (event.state.details) {
+                showMainGrid(currentFolderId);
+            }
+            loadFolderView();
+        } else {
+            loadRootView();
+        }
+    });
 
     // --- MODAL HANDLING ---
     const addEditModal = document.getElementById('add-edit-modal');
@@ -173,15 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('back-button').addEventListener('click', async () => {
-        if (document.getElementById('details-view').style.display === 'block' || document.getElementById('add-edit-modal').style.display === 'block') {
-            showMainGrid(currentFolderId);
-            loadFolderView();
-        } else if (currentFolderId !== null) {
-            const parentFolder = await getFolder(currentFolderId);
-            currentFolderId = parentFolder.parent_id;
-            loadFolderView();
-        }
+    document.getElementById('back-button').addEventListener('click', () => {
+        history.back();
     });
 
     document.getElementById('home-button').addEventListener('click', loadRootView);

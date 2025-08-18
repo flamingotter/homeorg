@@ -207,16 +207,16 @@ export function showMainGrid(currentFolderId) {
     document.getElementById('add-edit-modal').style.display = 'none';
     document.querySelector('.counts').style.display = 'flex';
     document.getElementById('add-item-fab').style.display = 'flex';
+    document.getElementById('home-button').style.display = 'block'; // Always show home button
     if (currentFolderId === null) {
         document.getElementById('back-button').style.display = 'none';
-        document.getElementById('home-button').style.display = 'none';
     } else {
         document.getElementById('back-button').style.display = 'block';
-        document.getElementById('home-button').style.display = 'block';
     }
 }
 
 export async function showDetails(type, id, onViewRefresh) {
+    history.pushState({ details: { type, id }, folderId: window.currentFolderId }, "", `#folder=${window.currentFolderId}/${type}=${id}`);
     document.getElementById('items-grid').style.display = 'none';
     document.getElementById('details-view').style.display = 'block';
     document.querySelector('.counts').style.display = 'none';
@@ -485,3 +485,26 @@ export function handleFileSelection(inputId, nameDisplayId) {
         }
     });
 }
+
+document.addEventListener('click', (event) => {
+    const openMenus = document.querySelectorAll('.options-menu');
+    const moreOptionsButtons = document.querySelectorAll('.more-options-button');
+    let clickedOnMenu = false;
+    let clickedOnButton = false;
+
+    openMenus.forEach(menu => {
+        if (menu.contains(event.target)) {
+            clickedOnMenu = true;
+        }
+    });
+
+    moreOptionsButtons.forEach(button => {
+        if (button.contains(event.target)) {
+            clickedOnButton = true;
+        }
+    });
+
+    if (!clickedOnMenu && !clickedOnButton) {
+        closeAllMenus();
+    }
+});
